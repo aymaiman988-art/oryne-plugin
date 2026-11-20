@@ -597,6 +597,23 @@
     if (t === 'block') return '[data-block-id], .sqs-block';
     return '[data-block-id], .sqs-block';
   }
+  /* v2.5: text-effect target resolution (oryne-text-target). In Squarespace
+     Edit mode the user often picks the block WRAPPER div ([data-block-id]) —
+     from the block-list dropdown or by tapping a block's padding — not the
+     h1/p inside it. A text-effect class on the wrapper does not visibly
+     change the heading, so when the chosen effect targets 'text' and the
+     selected element is not itself h1-h4/p but CONTAINS one, resolve to the
+     inner heading (first h1-h4, else first p). Non-text effects are untouched:
+     image/button/section effects still target the block/section as before. */
+  function resolveTextTarget(el, fx) {
+    try {
+      if (!el || !fx || (fx.targets || []).indexOf('text') === -1) return el;
+      if (/^H[1234]$/.test(el.tagName) || el.tagName === 'P') return el;
+      if (!el.querySelector) return el;
+      var inner = el.querySelector('h1, h2, h3, h4') || el.querySelector('p');
+      return inner || el;
+    } catch (err) { return el; } /* v2.5: resolution must never throw */
+  }
   /* v2.4: "All of this type" is the default — human-readable scope label, so
      the user can see exactly what an effect will hit before saving. */
   function scopeLabelFor(el) {
@@ -637,7 +654,7 @@
 
   /* ---------- Public API ---------- */
   window.Oryne = {
-    version: '2.4.0', EFFECTS: EFFECTS,
+    version: '2.5.0', EFFECTS: EFFECTS,
     refresh: function () { applyConfig(loadConfig()); },
     getConfig: loadConfig,
     applyConfig: applyConfig
@@ -981,7 +998,9 @@
     function updateSelectedInfo() {
       var info = panel.querySelector('[data-role="selected"]'); if (!info) return;
       if (!editorState.selectedEl) { info.textContent = 'Select a block: click any text, image, button or section on the page while this panel is open.'; return; }
-      info.textContent = 'Selected: ' + labelFor(editorState.selectedEl) + '  ·  ' + scopeLabelFor(editorState.selectedEl);
+      var fx = editorState.selectedEffect ? EFFECTS[editorState.selectedEffect] : null;
+      var showEl = resolveTextTarget(editorState.selectedEl, fx); /* v2.5: text effect chose ho to Selected line mein asli heading dikhe */
+      info.textContent = 'Selected: ' + labelFor(showEl) + '  ·  ' + scopeLabelFor(showEl);
     }
     function selectElement(el) {
       if (editorState.selectedEl) editorState.selectedEl.classList.remove('oryne-selected');
@@ -1043,7 +1062,9 @@
     }
     function currentItem() {
       if (!editorState.selectedEl || !editorState.selectedEffect) return null;
-      return { target: editorState.scope === 'all' ? allSelectorFor(editorState.selectedEl) : selectorFor(editorState.selectedEl), effect: editorState.selectedEffect, options: clone(editorState.options), scope: editorState.scope };
+      var fx = EFFECTS[editorState.selectedEffect];
+      var el = resolveTextTarget(editorState.selectedEl, fx); /* v2.5: text effect on a block wrapper previews + saves on the inner heading, not the wrapper */
+      return { target: editorState.scope === 'all' ? allSelectorFor(el) : selectorFor(el), effect: editorState.selectedEffect, options: clone(editorState.options), scope: editorState.scope };
     }
     function previewCurrent() {
       var item = currentItem(); if (!item) return;
@@ -1059,6 +1080,7 @@
     function clearPreview() {
       var el = editorState.selectedEl, fx = EFFECTS[editorState.selectedEffect];
       if (!el || !fx) return;
+      el = resolveTextTarget(el, fx); /* v2.5: clear exactly the element the preview hit */
       var saved = [];
       try { saved = loadConfig().items.filter(function (x) { return x.effect === editorState.selectedEffect; }); } catch (e) {}
       var targets = [];

@@ -32,14 +32,19 @@
 .oryne-fx-sticky-section { position: sticky; top: var(--oryne-top, 0px); z-index: 20; }
 
 /* ---------- Text effects ---------- */
+/* v2.5: text effects MUST beat Squarespace's theme CSS, which colours h1/h2/h3
+   directly (e.g. .sqs-block-content h1) with higher specificity than one
+   class. Without !important, `color: transparent` lost and the gradient
+   stayed invisible even though Apply worked. -webkit-text-fill-color makes
+   gradient text reliable. */
 .oryne-fx-gradient-heading {
-  background: linear-gradient(var(--oryne-angle, 90deg), var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff));
-  -webkit-background-clip: text; background-clip: text; color: transparent;
+  background: linear-gradient(var(--oryne-angle, 90deg), var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
+  -webkit-background-clip: text !important; background-clip: text !important; color: transparent !important; -webkit-text-fill-color: transparent !important;
 }
-.oryne-fx-highlight-word { background: linear-gradient(transparent 55%, var(--oryne-highlight, #ffe08a) 55%); padding: 0 2px; }
-.oryne-fx-letter-spacing { letter-spacing: var(--oryne-spacing, .12em); }
-.oryne-fx-underline-anim { background-image: linear-gradient(currentColor, currentColor); background-size: 0% 2px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .4s ease; padding-bottom: 3px; }
-.oryne-fx-underline-anim:hover, .oryne-fx-underline-anim.oryne-visible { background-size: 100% 2px; }
+.oryne-fx-highlight-word { background: linear-gradient(transparent 55%, var(--oryne-highlight, #ffe08a) 55%) !important; padding: 0 2px; }
+.oryne-fx-letter-spacing { letter-spacing: var(--oryne-spacing, .12em) !important; }
+.oryne-fx-underline-anim { background-image: linear-gradient(currentColor, currentColor) !important; background-size: 0% 2px !important; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .4s ease; padding-bottom: 3px; }
+.oryne-fx-underline-anim:hover, .oryne-fx-underline-anim.oryne-visible { background-size: 100% 2px !important; }
 .oryne-fx-typewriter::after, .oryne-fx-word-loop::after { content: "|"; animation: oryne-blink 1s steps(1) infinite; margin-left: 2px; }
 @keyframes oryne-blink { 50% { opacity: 0; } }
 
@@ -204,17 +209,17 @@
 .oryne-fx-loop-bounce { animation: oryne-bounce 1.6s ease-in-out infinite; }
 @keyframes oryne-bounce { 50% { transform: translateY(-12px); } }
 /* Text */
-.oryne-fx-text-glow { text-shadow: 0 0 18px var(--oryne-color1,#7b2fff), 0 0 40px var(--oryne-color1,#7b2fff); }
-.oryne-fx-text-outline { color: transparent !important; -webkit-text-stroke: 2px var(--oryne-color1,#111); }
-.oryne-fx-text-shadow { text-shadow: 3px 3px 0 rgba(0,0,0,.18); }
-.oryne-fx-text-gradient-anim { background: linear-gradient(90deg, var(--oryne-color1,#ff6a00), var(--oryne-color2,#7b2fff), var(--oryne-color1,#ff6a00)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: oryne-gradmove 4s linear infinite; }
+.oryne-fx-text-glow { text-shadow: 0 0 18px var(--oryne-color1,#7b2fff), 0 0 40px var(--oryne-color1,#7b2fff) !important; }
+.oryne-fx-text-outline { color: transparent !important; -webkit-text-fill-color: transparent !important; -webkit-text-stroke: 2px var(--oryne-color1,#111) !important; }
+.oryne-fx-text-shadow { text-shadow: 3px 3px 0 rgba(0,0,0,.18) !important; }
+.oryne-fx-text-gradient-anim { background: linear-gradient(90deg, var(--oryne-color1,#ff6a00), var(--oryne-color2,#7b2fff), var(--oryne-color1,#ff6a00)) !important; background-size: 200% auto; -webkit-background-clip: text !important; background-clip: text !important; color: transparent !important; -webkit-text-fill-color: transparent !important; animation: oryne-gradmove 4s linear infinite; }
 @keyframes oryne-gradmove { to { background-position: 200% center; } }
-.oryne-fx-text-uppercase { text-transform: uppercase; }
-.oryne-fx-text-italic { font-style: italic; }
-.oryne-fx-text-strikethrough { text-decoration: line-through; }
+.oryne-fx-text-uppercase { text-transform: uppercase !important; }
+.oryne-fx-text-italic { font-style: italic !important; }
+.oryne-fx-text-strikethrough { text-decoration: line-through !important; }
 .oryne-fx-text-center { text-align: center !important; }
-.oryne-fx-text-lineheight { line-height: var(--oryne-spacing,1.6); }
-.oryne-fx-text-letterspacing-wide { letter-spacing: .28em; }
+.oryne-fx-text-lineheight { line-height: var(--oryne-spacing,1.6) !important; }
+.oryne-fx-text-letterspacing-wide { letter-spacing: .28em !important; }
 /* Buttons extra */
 .oryne-fx-btn-3d { box-shadow: 0 5px 0 var(--oryne-color1,#ff6a00), 0 8px 16px rgba(0,0,0,.2); transform: translateY(0); }
 .oryne-fx-btn-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--oryne-color1,#ff6a00); }
