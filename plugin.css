@@ -1,0 +1,337 @@
+/* Oryne — clean-room Squarespace 7.1 plugin styles
+   Original code. All editor + runtime classes use the oryne- prefix
+   so they do not clash with Squarespace or other plugins. */
+
+/* ---------- Runtime helpers ---------- */
+.oryne-hidden { display: none !important; }
+
+/* ---------- Motion effects ---------- */
+.oryne-fx-fade-up, .oryne-fx-fade-in, .oryne-fx-slide-left,
+.oryne-fx-slide-right, .oryne-fx-zoom-in, .oryne-fx-reveal-scroll {
+  opacity: 0;
+  transition: opacity var(--oryne-duration, .7s) ease var(--oryne-delay, 0s),
+    transform var(--oryne-duration, .7s) ease var(--oryne-delay, 0s);
+  will-change: opacity, transform;
+}
+.oryne-fx-fade-up { transform: translateY(28px); }
+.oryne-fx-slide-left { transform: translateX(-32px); }
+.oryne-fx-slide-right { transform: translateX(32px); }
+.oryne-fx-zoom-in { transform: scale(.92); }
+.oryne-fx-fade-up.oryne-visible, .oryne-fx-fade-in.oryne-visible,
+.oryne-fx-slide-left.oryne-visible, .oryne-fx-slide-right.oryne-visible,
+.oryne-fx-zoom-in.oryne-visible, .oryne-fx-reveal-scroll.oryne-visible {
+  opacity: 1; transform: none;
+}
+.oryne-fx-stagger-children > * {
+  opacity: 0; transform: translateY(18px);
+  transition: opacity .6s ease, transform .6s ease;
+  transition-delay: calc(var(--oryne-stagger, 120ms) * var(--oryne-index, 0));
+}
+.oryne-fx-stagger-children.oryne-visible > * { opacity: 1; transform: none; }
+.oryne-fx-parallax { will-change: transform; }
+.oryne-fx-sticky-section { position: sticky; top: var(--oryne-top, 0px); z-index: 20; }
+
+/* ---------- Text effects ---------- */
+.oryne-fx-gradient-heading {
+  background: linear-gradient(var(--oryne-angle, 90deg), var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.oryne-fx-highlight-word { background: linear-gradient(transparent 55%, var(--oryne-highlight, #ffe08a) 55%); padding: 0 2px; }
+.oryne-fx-letter-spacing { letter-spacing: var(--oryne-spacing, .12em); }
+.oryne-fx-underline-anim { background-image: linear-gradient(currentColor, currentColor); background-size: 0% 2px; background-repeat: no-repeat; background-position: 0 100%; transition: background-size .4s ease; padding-bottom: 3px; }
+.oryne-fx-underline-anim:hover, .oryne-fx-underline-anim.oryne-visible { background-size: 100% 2px; }
+.oryne-fx-typewriter::after, .oryne-fx-word-loop::after { content: "|"; animation: oryne-blink 1s steps(1) infinite; margin-left: 2px; }
+@keyframes oryne-blink { 50% { opacity: 0; } }
+
+/* ---------- Button effects ---------- */
+.oryne-fx-btn-gradient {
+  background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
+  color: #fff !important; border: none !important;
+}
+.oryne-fx-btn-pill { border-radius: 999px !important; }
+.oryne-fx-btn-outline { background: transparent !important; border: 2px solid var(--oryne-color1, #111) !important; color: var(--oryne-color1, #111) !important; }
+.oryne-fx-btn-lift { transition: transform .25s ease, box-shadow .25s ease; }
+.oryne-fx-btn-lift:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.18); }
+.oryne-fx-btn-glow:hover { box-shadow: 0 0 0 4px var(--oryne-glow, rgba(123,47,255,.25)), 0 0 24px var(--oryne-glow, rgba(123,47,255,.45)); }
+.oryne-fx-btn-shine { position: relative; overflow: hidden; }
+.oryne-fx-btn-shine::after { content: ""; position: absolute; top: 0; left: -80%; width: 50%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent); transform: skewX(-20deg); transition: left .6s ease; }
+.oryne-fx-btn-shine:hover::after { left: 130%; }
+.oryne-fx-btn-underline { border-bottom: 3px solid var(--oryne-color1, #ff6a00) !important; border-radius: 0 !important; }
+
+/* ---------- Block / image effects ---------- */
+.oryne-fx-img-zoom { overflow: hidden; }
+.oryne-fx-img-zoom img { transition: transform .5s ease; }
+.oryne-fx-img-zoom:hover img { transform: scale(1.08); }
+.oryne-fx-img-reveal { position: relative; overflow: hidden; }
+.oryne-fx-img-reveal .oryne-caption {
+  position: absolute; left: 0; right: 0; bottom: 0; padding: 14px; color: #fff;
+  background: linear-gradient(transparent, rgba(0,0,0,.75)); transform: translateY(100%); transition: transform .35s ease;
+}
+.oryne-fx-img-reveal:hover .oryne-caption { transform: translateY(0); }
+.oryne-fx-img-grayscale img { filter: grayscale(1); transition: filter .4s ease; }
+.oryne-fx-img-grayscale:hover img { filter: grayscale(0); }
+.oryne-fx-img-tilt { transition: transform .3s ease; transform-style: preserve-3d; }
+.oryne-fx-img-tilt:hover { transform: perspective(700px) rotateX(4deg) rotateY(-5deg) scale(1.02); }
+.oryne-fx-block-shadow { box-shadow: 0 18px 40px rgba(0,0,0,.16); }
+.oryne-fx-block-rounded, .oryne-fx-block-rounded img { border-radius: var(--oryne-radius, 18px); }
+.oryne-fx-block-rotate { transform: rotate(var(--oryne-rotate, -2deg)); }
+.oryne-fx-block-border { border: var(--oryne-border-width, 3px) solid var(--oryne-color1, #111); }
+
+/* ---------- Visibility ---------- */
+@media (max-width: 767px) { .oryne-fx-hide-mobile { display: none !important; } }
+@media (min-width: 1024px) { .oryne-fx-hide-desktop { display: none !important; } }
+@media (min-width: 768px) and (max-width: 1023px) { .oryne-fx-hide-tablet { display: none !important; } }
+
+/* ---------- Navigation ---------- */
+.oryne-fx-sticky-header { position: sticky !important; top: 0; z-index: 100; background: var(--oryne-header-bg, #fff); box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+.oryne-fx-announce-anim { animation: oryne-announce 3s ease-in-out infinite alternate; }
+@keyframes oryne-announce { from { letter-spacing: .02em; } to { letter-spacing: .14em; } }
+.oryne-mega { position: relative; }
+.oryne-mega-panel { display: none; position: absolute; top: 100%; left: 50%; transform: translateX(-50%); min-width: 420px; max-width: 90vw; background: #fff; border: 1px solid #e5e5e5; border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,.16); padding: 18px; z-index: 200; }
+.oryne-mega:hover .oryne-mega-panel, .oryne-mega.oryne-open .oryne-mega-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.oryne-mega-panel a { display: block; padding: 8px; border-radius: 8px; text-decoration: none; color: #111; }
+.oryne-mega-panel a:hover { background: #f4f4f4; }
+.oryne-mega-panel a small { display: block; color: #666; }
+
+/* ---------- Content / marketing ---------- */
+.oryne-popup { position: fixed; inset: 0; background: rgba(0,0,0,.55); display: flex; align-items: center; justify-content: center; z-index: 9999; }
+.oryne-popup-card { background: #fff; border-radius: 16px; padding: 28px; max-width: 420px; width: 90%; text-align: center; position: relative; }
+.oryne-popup-close { position: absolute; top: 10px; right: 14px; border: 0; background: none; font-size: 22px; cursor: pointer; }
+.oryne-countdown { display: flex; gap: 10px; font-weight: 700; }
+.oryne-countdown span { background: #111; color: #fff; padding: 10px 12px; border-radius: 10px; min-width: 58px; text-align: center; }
+.oryne-countdown small { display: block; font-size: 11px; font-weight: 400; opacity: .7; }
+.oryne-testimonial { overflow: hidden; }
+.oryne-testimonial-track { display: flex; transition: transform .5s ease; }
+.oryne-testimonial-track > * { flex: 0 0 100%; padding: 10px; box-sizing: border-box; }
+.oryne-testimonial-nav { display: flex; gap: 8px; margin-top: 10px; }
+.oryne-testimonial-nav button { border: 1px solid #ccc; background: #fff; border-radius: 999px; padding: 6px 12px; cursor: pointer; }
+.oryne-pricing-highlight { border: 3px solid var(--oryne-color1, #7b2fff) !important; transform: scale(1.03); box-shadow: 0 18px 40px rgba(123,47,255,.18); position: relative; }
+.oryne-pricing-highlight::before { content: "MOST POPULAR"; position: absolute; top: -13px; left: 50%; transform: translateX(-50%); background: var(--oryne-color1, #7b2fff); color: #fff; font-size: 11px; padding: 4px 10px; border-radius: 999px; }
+.oryne-logo-carousel { overflow: hidden; white-space: nowrap; }
+.oryne-logo-track { display: inline-flex; gap: 36px; align-items: center; animation: oryne-scroll var(--oryne-speed, 18s) linear infinite; }
+@keyframes oryne-scroll { to { transform: translateX(-50%); } }
+.oryne-before-after { position: relative; overflow: hidden; user-select: none; }
+.oryne-before-after img { display: block; width: 100%; }
+.oryne-before-after .oryne-after-img { position: absolute; inset: 0; overflow: hidden; width: 50%; border-right: 3px solid #fff; }
+.oryne-before-after .oryne-after-img img { width: 100%; max-width: none; height: 100%; object-fit: cover; }
+.oryne-before-after input[type=range] { position: absolute; inset: 0; width: 100%; opacity: 0; cursor: ew-resize; }
+.oryne-accordion summary { cursor: pointer; font-weight: 700; padding: 12px; }
+.oryne-accordion details { border: 1px solid #ddd; border-radius: 10px; margin-bottom: 8px; padding: 4px 8px; }
+.oryne-accordion details[open] { background: #fafafa; }
+
+/* ---------- Editor (floating button + panel) ---------- */
+.oryne-fab {
+  position: fixed; right: 18px; bottom: 18px; z-index: 10000;
+  width: 56px; height: 56px; border-radius: 50%; border: 0; cursor: pointer;
+  background: #111; color: #fff; font-size: 22px; font-weight: 700;
+  box-shadow: 0 10px 28px rgba(0,0,0,.28);
+}
+.oryne-fab:hover { transform: scale(1.05); }
+.oryne-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 360px; max-width: 94vw; z-index: 10001;
+  background: #fff; color: #111; box-shadow: -12px 0 40px rgba(0,0,0,.18);
+  display: flex; flex-direction: column; font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; font-size: 14px;
+  transform: translateX(105%); transition: transform .3s ease;
+}
+.oryne-panel.oryne-open { transform: none; }
+.oryne-panel-head { padding: 16px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+.oryne-panel-head h2 { margin: 0; font-size: 17px; }
+.oryne-panel-head p { margin: 2px 0 0; color: #666; font-size: 12px; }
+.oryne-panel-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.oryne-panel-foot { padding: 12px 16px; border-top: 1px solid #eee; display: flex; flex-wrap: wrap; gap: 8px; }
+.oryne-panel button { cursor: pointer; }
+.oryne-btn { border: 1px solid #ddd; background: #fff; border-radius: 8px; padding: 8px 10px; font-size: 13px; }
+.oryne-btn-primary { background: #111; color: #fff; border-color: #111; }
+.oryne-selected-info { background: #f0f7ff; border: 1px solid #cfe6ff; border-radius: 10px; padding: 10px; margin-bottom: 12px; font-size: 12px; word-break: break-all; }
+.oryne-cat { font-weight: 700; margin: 16px 0 6px; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: #555; }
+.oryne-cat:first-child { margin-top: 0; }
+.oryne-effect { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 10px; border: 1px solid #eee; border-radius: 9px; margin-bottom: 6px; background: #fff; }
+.oryne-effect.active { border-color: #111; background: #f7f7f7; }
+.oryne-effect small { display: block; color: #666; font-size: 12px; }
+.oryne-field { margin: 8px 0; }
+.oryne-field label { display: block; font-size: 12px; color: #555; margin-bottom: 4px; }
+.oryne-field input, .oryne-field select, .oryne-field textarea { width: 100%; box-sizing: border-box; padding: 7px 8px; border: 1px solid #ccc; border-radius: 7px; font-size: 13px; }
+.oryne-scope { display: flex; gap: 6px; margin: 8px 0; }
+.oryne-scope button { flex: 1; padding: 7px; border-radius: 8px; border: 1px solid #ddd; background: #fff; }
+.oryne-scope button.active { background: #111; color: #fff; border-color: #111; }
+.oryne-code { width: 100%; height: 130px; box-sizing: border-box; font-family: monospace; font-size: 11px; padding: 8px; border: 1px solid #ccc; border-radius: 8px; }
+.oryne-selecting { outline: 2px dashed #7b2fff !important; outline-offset: 3px; cursor: pointer; }
+.oryne-selected { outline: 3px solid #111 !important; outline-offset: 3px; }
+@media (max-width: 600px) { .oryne-panel { width: 100%; } }
+
+/* Oryne logo in editor */
+.oryne-fab svg { display: block; width: 30px; height: 30px; margin: 0 auto; }
+.oryne-panel-head svg { flex: 0 0 auto; width: 28px; height: 28px; }
+
+/* ---------- Oryne v2: new effects (42 groups, 100+) ---------- */
+/* Scroll / momentum */
+.oryne-fx-flip-in, .oryne-fx-bounce-in, .oryne-fx-rotate-in, .oryne-fx-blur-in,
+.oryne-fx-fade-down, .oryne-fx-slide-up, .oryne-fx-scale-in, .oryne-fx-skew-in,
+.oryne-fx-reveal-left, .oryne-fx-reveal-right, .oryne-fx-reveal-zoom {
+  opacity: 0; transition: opacity var(--oryne-duration,.7s) ease, transform var(--oryne-duration,.7s) ease, filter var(--oryne-duration,.7s) ease; will-change: opacity, transform;
+}
+.oryne-fx-flip-in { transform: perspective(700px) rotateX(70deg); }
+.oryne-fx-bounce-in { transform: scale(.7); }
+.oryne-fx-rotate-in { transform: rotate(-12deg) scale(.9); }
+.oryne-fx-blur-in { filter: blur(8px); }
+.oryne-fx-fade-down { transform: translateY(-28px); }
+.oryne-fx-slide-up { transform: translateY(32px); }
+.oryne-fx-scale-in { transform: scale(.85); }
+.oryne-fx-skew-in { transform: skewX(-12deg); }
+.oryne-fx-reveal-left { transform: translateX(-40px); }
+.oryne-fx-reveal-right { transform: translateX(40px); }
+.oryne-fx-reveal-zoom { transform: scale(.9); }
+.oryne-fx-flip-in.oryne-visible, .oryne-fx-bounce-in.oryne-visible, .oryne-fx-rotate-in.oryne-visible,
+.oryne-fx-blur-in.oryne-visible, .oryne-fx-fade-down.oryne-visible, .oryne-fx-slide-up.oryne-visible,
+.oryne-fx-scale-in.oryne-visible, .oryne-fx-skew-in.oryne-visible, .oryne-fx-reveal-left.oryne-visible,
+.oryne-fx-reveal-right.oryne-visible, .oryne-fx-reveal-zoom.oryne-visible { opacity: 1; transform: none; filter: none; }
+.oryne-fx-bounce-in.oryne-visible { animation: oryne-bouncein .6s ease; }
+@keyframes oryne-bouncein { 0%{transform:scale(.7)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+.oryne-fx-momentum-scroll { will-change: transform; }
+/* Loop animator */
+.oryne-fx-loop-float { animation: oryne-float 3s ease-in-out infinite; }
+@keyframes oryne-float { 50% { transform: translateY(-10px); } }
+.oryne-fx-loop-pulse { animation: oryne-pulse 2s ease-in-out infinite; }
+@keyframes oryne-pulse { 50% { transform: scale(1.05); opacity:.9; } }
+.oryne-fx-loop-wiggle { animation: oryne-wiggle 2.4s ease-in-out infinite; }
+@keyframes oryne-wiggle { 25%{transform:rotate(2deg)} 75%{transform:rotate(-2deg)} }
+.oryne-fx-loop-spin { animation: oryne-spin 8s linear infinite; }
+@keyframes oryne-spin { to { transform: rotate(360deg); } }
+.oryne-fx-loop-bounce { animation: oryne-bounce 1.6s ease-in-out infinite; }
+@keyframes oryne-bounce { 50% { transform: translateY(-12px); } }
+/* Text */
+.oryne-fx-text-glow { text-shadow: 0 0 18px var(--oryne-color1,#7b2fff), 0 0 40px var(--oryne-color1,#7b2fff); }
+.oryne-fx-text-outline { color: transparent !important; -webkit-text-stroke: 2px var(--oryne-color1,#111); }
+.oryne-fx-text-shadow { text-shadow: 3px 3px 0 rgba(0,0,0,.18); }
+.oryne-fx-text-gradient-anim { background: linear-gradient(90deg, var(--oryne-color1,#ff6a00), var(--oryne-color2,#7b2fff), var(--oryne-color1,#ff6a00)); background-size: 200% auto; -webkit-background-clip: text; background-clip: text; color: transparent; animation: oryne-gradmove 4s linear infinite; }
+@keyframes oryne-gradmove { to { background-position: 200% center; } }
+.oryne-fx-text-uppercase { text-transform: uppercase; }
+.oryne-fx-text-italic { font-style: italic; }
+.oryne-fx-text-strikethrough { text-decoration: line-through; }
+.oryne-fx-text-center { text-align: center !important; }
+.oryne-fx-text-lineheight { line-height: var(--oryne-spacing,1.6); }
+.oryne-fx-text-letterspacing-wide { letter-spacing: .28em; }
+/* Buttons extra */
+.oryne-fx-btn-3d { box-shadow: 0 5px 0 var(--oryne-color1,#ff6a00), 0 8px 16px rgba(0,0,0,.2); transform: translateY(0); }
+.oryne-fx-btn-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--oryne-color1,#ff6a00); }
+.oryne-fx-btn-glass { background: rgba(255,255,255,.25) !important; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.6) !important; color: #111 !important; }
+.oryne-fx-btn-neon { background: #111 !important; color: var(--oryne-color1,#00e5ff) !important; box-shadow: 0 0 18px var(--oryne-color1,#00e5ff); border: 2px solid var(--oryne-color1,#00e5ff) !important; }
+.oryne-fx-btn-arrow::after { content: " →"; transition: margin .2s; }
+.oryne-fx-btn-arrow:hover::after { margin-left: 6px; }
+.oryne-fx-btn-rounded { border-radius: 14px !important; }
+.oryne-fx-btn-square { border-radius: 0 !important; }
+.oryne-fx-btn-ghost { background: transparent !important; color: inherit !important; border: 1px dashed #999 !important; }
+.oryne-fx-btn-dark { background: #111 !important; color: #fff !important; border-color: #111 !important; }
+/* Hover */
+.oryne-fx-hover-lift-block, .oryne-fx-hover-glow-block, .oryne-fx-hover-scale, .oryne-fx-hover-flip, .oryne-fx-hover-overlay, .oryne-fx-hover-border-anim, .oryne-fx-hover-shadow-grow, .oryne-fx-hover-rotate-block { transition: transform .3s ease, box-shadow .3s ease; }
+.oryne-fx-hover-lift-block:hover { transform: translateY(-8px); box-shadow: 0 18px 36px rgba(0,0,0,.16); }
+.oryne-fx-hover-glow-block:hover { box-shadow: 0 0 0 4px rgba(123,47,255,.2), 0 0 30px rgba(123,47,255,.4); }
+.oryne-fx-hover-scale:hover { transform: scale(1.04); }
+.oryne-fx-hover-flip:hover { transform: perspective(700px) rotateY(12deg); }
+.oryne-fx-hover-overlay { position: relative; }
+.oryne-fx-hover-overlay:hover::after { content: ""; position: absolute; inset: 0; background: rgba(0,0,0,.35); border-radius: inherit; pointer-events: none; }
+.oryne-fx-hover-border-anim:hover { border: 3px solid #7b2fff; }
+.oryne-fx-hover-shadow-grow:hover { box-shadow: 0 24px 48px rgba(0,0,0,.22); }
+.oryne-fx-hover-rotate-block:hover { transform: rotate(2deg); }
+/* Image shapes */
+.oryne-fx-img-circle, .oryne-fx-img-circle img { border-radius: 50% !important; }
+.oryne-fx-img-triangle, .oryne-fx-img-triangle img { clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+.oryne-fx-img-parallelogram, .oryne-fx-img-parallelogram img { clip-path: polygon(12% 0, 100% 0, 88% 100%, 0 100%); }
+.oryne-fx-img-arrow-shape, .oryne-fx-img-arrow-shape img { clip-path: polygon(0 0, 75% 0, 100% 50%, 75% 100%, 0 100%); }
+.oryne-fx-img-spotlight { position: relative; }
+.oryne-fx-img-spotlight::after { content: ""; position: absolute; inset: 0; background: radial-gradient(circle at 50% 40%, transparent 40%, rgba(0,0,0,.45)); pointer-events: none; }
+.oryne-fx-img-pop { animation: oryne-pop .6s ease; }
+@keyframes oryne-pop { 0%{transform:scale(.8)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+.oryne-fx-img-fade-hover img { transition: opacity .35s; }
+.oryne-fx-img-fade-hover:hover img { opacity: .55; }
+.oryne-fx-img-flip-hover { transition: transform .5s; }
+.oryne-fx-img-flip-hover:hover { transform: perspective(700px) rotateY(180deg); }
+/* Backgrounds */
+.oryne-fx-bg-gradient-anim { background: linear-gradient(120deg, var(--oryne-color1,#ff6a00), var(--oryne-color2,#7b2fff), #00c2ff, var(--oryne-color1,#ff6a00)) !important; background-size: 300% 300% !important; animation: oryne-bgmove 10s ease infinite; }
+@keyframes oryne-bgmove { 50% { background-position: 100% 50%; } }
+.oryne-fx-bg-dots { background-image: radial-gradient(#ccc 1.5px, transparent 1.5px) !important; background-size: 22px 22px !important; }
+.oryne-fx-bg-grid { background-image: linear-gradient(#eee 1px, transparent 1px), linear-gradient(90deg, #eee 1px, transparent 1px) !important; background-size: 32px 32px !important; }
+.oryne-fx-bg-glow-orb { background: radial-gradient(circle at 30% 30%, rgba(123,47,255,.25), transparent 55%), radial-gradient(circle at 75% 70%, rgba(255,106,0,.22), transparent 55%) !important; }
+.oryne-fx-bg-diagonal { background: repeating-linear-gradient(45deg, #f6f6f6 0 14px, #fff 14px 28px) !important; }
+.oryne-fx-bg-noise { background: #f4f1ea !important; }
+.oryne-fx-bg-dark { background: #111 !important; color: #fff !important; }
+.oryne-fx-bg-dark h1, .oryne-fx-bg-dark h2, .oryne-fx-bg-dark h3, .oryne-fx-bg-dark p { color: #fff !important; }
+.oryne-fx-bg-color-cycle { animation: oryne-bgcolor 12s ease infinite; }
+@keyframes oryne-bgcolor { 0%{background:#fff3e8} 33%{background:#f3eaff} 66%{background:#e8f7ff} 100%{background:#fff3e8} }
+/* Block designer */
+.oryne-fx-block-bg { background: var(--oryne-color1,#fff7ed) !important; padding: 24px !important; border-radius: 14px; }
+.oryne-fx-block-padding { padding: var(--oryne-radius,24px) !important; }
+.oryne-fx-block-glass { background: rgba(255,255,255,.6) !important; backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,.7); border-radius: 16px; box-shadow: 0 12px 32px rgba(0,0,0,.1); }
+.oryne-fx-block-minimal { background: #fff !important; border: 1px solid #eee; border-radius: 8px; padding: 20px; }
+/* Navigation / header */
+.oryne-fx-dropdown-designer select, .oryne-fx-dropdown-designer .oryne-dropdown { border-radius: 10px; border: 1px solid #ddd; padding: 10px; background: #fff; box-shadow: 0 8px 24px rgba(0,0,0,.08); }
+.oryne-fx-header-transparent { background: transparent !important; box-shadow: none !important; }
+.oryne-fx-header-centered { flex-direction: column !important; justify-content: center !important; text-align: center; gap: 8px; }
+.oryne-fx-header-shadow { box-shadow: 0 8px 28px rgba(0,0,0,.14) !important; border-bottom: 1px solid #eee; }
+.oryne-hamburger { display: none; border: 1px solid #ddd; background: #fff; border-radius: 8px; padding: 8px 12px; cursor: pointer; }
+@media (max-width: 767px) { .oryne-hamburger { display: inline-block; } header nav:not(.oryne-nav-open) { display: none; } header nav.oryne-nav-open { display: flex; flex-direction: column; gap: 10px; } }
+.oryne-slide-btn { position: fixed; left: 18px; top: 18px; z-index: 9998; border: 0; background: #111; color: #fff; border-radius: 999px; padding: 10px 16px; cursor: pointer; }
+.oryne-slide-menu { position: fixed; top: 0; left: 0; bottom: 0; width: 280px; max-width: 85vw; background: #fff; z-index: 10002; box-shadow: 12px 0 40px rgba(0,0,0,.2); padding: 20px; transform: translateX(-105%); transition: transform .3s ease; display: flex; flex-direction: column; gap: 12px; }
+.oryne-slide-menu.oryne-open { transform: none; }
+.oryne-slide-menu a { text-decoration: none; color: #111; font-weight: 700; }
+.oryne-slide-close { align-self: flex-end; border: 0; background: none; font-size: 20px; cursor: pointer; }
+.oryne-fx-announce-slide { animation: oryne-slidein 1s ease; }
+@keyframes oryne-slidein { from { transform: translateY(-100%); } }
+.oryne-fx-announce-marquee { overflow: hidden; white-space: nowrap; }
+.oryne-fx-announce-marquee::after { content: "  •  " attr(data-text); animation: oryne-marquee 12s linear infinite; display: inline-block; }
+@keyframes oryne-marquee { to { transform: translateX(-50%); } }
+/* Widgets */
+.oryne-backtop { position: fixed; right: 18px; bottom: 88px; z-index: 9998; border: 0; background: #111; color: #fff; border-radius: 999px; padding: 10px 16px; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity .3s; }
+.oryne-backtop.oryne-show { opacity: 1; pointer-events: auto; }
+.oryne-loader { position: fixed; inset: 0; background: #fff; z-index: 10003; display: flex; align-items: center; justify-content: center; transition: opacity .6s; }
+.oryne-loader.oryne-done { opacity: 0; pointer-events: none; }
+.oryne-loader-inner { text-align: center; }
+.oryne-loader-bar { width: 180px; height: 6px; background: #eee; border-radius: 999px; overflow: hidden; margin: 12px auto 0; }
+.oryne-loader-bar span { display: block; height: 100%; width: 40%; background: linear-gradient(90deg,#ff6a00,#7b2fff); animation: oryne-loadbar 1s ease-in-out infinite alternate; }
+@keyframes oryne-loadbar { to { margin-left: 60%; } }
+.oryne-dots { position: fixed; right: 16px; top: 50%; transform: translateY(-50%); z-index: 9998; display: flex; flex-direction: column; gap: 8px; }
+.oryne-dots button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid #ccc; background: #fff; cursor: pointer; font-size: 12px; }
+.oryne-searchbar { display: flex; gap: 8px; align-items: center; }
+.oryne-searchbar input { padding: 8px 10px; border: 1px solid #ccc; border-radius: 999px; min-width: 180px; }
+.oryne-search-count { font-size: 12px; color: #666; }
+.oryne-video-btn { border: 0; background: #e50914; color: #fff; border-radius: 999px; padding: 12px 20px; cursor: pointer; font-weight: 700; }
+.oryne-cursor { position: fixed; z-index: 10004; pointer-events: none; font-size: 22px; transform: translate(-50%,-50%); }
+.oryne-cookie { position: fixed; left: 16px; right: 16px; bottom: 16px; z-index: 9999; display: flex; justify-content: space-between; align-items: center; gap: 14px; flex-wrap: wrap; padding: 16px 20px; border-radius: 12px; box-shadow: 0 12px 32px rgba(0,0,0,.2); }
+.oryne-cookie-dark { background: #111; color: #fff; }
+.oryne-cookie-light { background: #fff; color: #111; border: 1px solid #ddd; }
+.oryne-cookie-pill { background: #111; color: #fff; border-radius: 999px; }
+.oryne-cookie button { border: 0; border-radius: 999px; padding: 8px 16px; cursor: pointer; }
+.oryne-cookie-accept { background: #ff6a00; color: #fff; }
+.oryne-chat { position: fixed; left: 18px; bottom: 18px; z-index: 9998; display: flex; flex-direction: column; gap: 8px; }
+.oryne-chat a { width: 48px; height: 48px; border-radius: 50%; background: #111; color: #fff; display: flex; align-items: center; justify-content: center; text-decoration: none; font-size: 22px; box-shadow: 0 8px 20px rgba(0,0,0,.25); }
+/* Content widgets */
+.oryne-tabs { display: flex; gap: 20px; }
+.oryne-tab-bar { display: flex; flex-direction: column; gap: 8px; min-width: 160px; }
+.oryne-tab-bar button { text-align: left; padding: 10px 14px; border: 1px solid #ddd; background: #fff; border-radius: 8px; cursor: pointer; }
+.oryne-tab-bar button.active { background: #111; color: #fff; }
+.oryne-tab-body { flex: 1; }
+.oryne-flex-cards { display: flex; gap: 12px; }
+.oryne-flex-card { flex: 1; transition: flex .4s ease; overflow: hidden; border-radius: 12px; }
+.oryne-flex-card:hover { flex: 2.2; }
+.oryne-calendar { border: 1px solid #e5e5e5; border-radius: 14px; padding: 18px; background: #fff; }
+.oryne-cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; text-align: center; }
+.oryne-cal-grid span { padding: 8px 0; border-radius: 8px; }
+.oryne-cal-day.has-event { background: #ff6a00; color: #fff; font-weight: 700; cursor: help; }
+.oryne-cal-note { font-size: 13px; color: #555; }
+.oryne-filter-bar { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+.oryne-filter-bar button { border: 1px solid #ddd; background: #fff; border-radius: 999px; padding: 7px 14px; cursor: pointer; }
+.oryne-filter-bar button.active { background: #111; color: #fff; }
+.oryne-fx-list-grid { display: grid !important; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+.oryne-fx-list-cards > * { border: 1px solid #e5e5e5; border-radius: 12px; padding: 16px; background: #fff; margin-bottom: 12px; }
+.oryne-fx-blog-banner { background: linear-gradient(90deg, var(--oryne-color1,#ff6a00), #7b2fff) !important; color: #fff !important; padding: 32px !important; border-radius: 16px; }
+.oryne-fx-blog-banner h2, .oryne-fx-blog-banner h3, .oryne-fx-blog-banner p { color: #fff !important; }
+.oryne-video-block { position: relative; border: 4px solid #111; border-radius: 16px; overflow: hidden; }
+.oryne-play-badge { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); width: 64px; height: 64px; border-radius: 50%; background: rgba(0,0,0,.65); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+.oryne-badge { position: absolute; top: 12px; left: 12px; z-index: 5; padding: 6px 12px; border-radius: 999px; font-size: 12px; font-weight: 800; color: #fff; }
+.oryne-badge-sale { background: #e50914; }
+.oryne-badge-sold { background: #111; }
+.oryne-fx-pricing-plan { border: 2px solid var(--oryne-color1,#7b2fff) !important; border-radius: 16px; box-shadow: 0 16px 36px rgba(123,47,255,.15); }
+.oryne-fx-carousel-dots .oryne-testimonial-nav button { border-radius: 50%; width: 14px; height: 14px; padding: 0; font-size: 0; }
+.oryne-fx-testimonial-card { background: #fff; border: 1px solid #eee; border-radius: 14px; padding: 20px; box-shadow: 0 10px 28px rgba(0,0,0,.08); }
+/* Editor search */
+.oryne-search { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1px solid #ccc; border-radius: 8px; margin: 10px 0 4px; font-size: 13px; }

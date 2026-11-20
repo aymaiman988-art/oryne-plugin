@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Oryne — Demo Site (Fake Squarespace 7.1)</title>
+<link rel="stylesheet" href="plugin.css">
+<style>
+  body { font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 0; color: #111; line-height: 1.55; }
+  .demo-bar { background: #111; color: #fff; padding: 12px 20px; font-size: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .demo-bar b { color: #ffb37a; }
+  .demo-bar img { width: 26px; height: 26px; }
+  header.header { display: flex; justify-content: space-between; align-items: center; padding: 16px 32px; background: #fff; }
+  header nav a { margin: 0 10px; text-decoration: none; color: #111; font-weight: 600; }
+  .page-section { padding: 56px 32px; max-width: 1100px; margin: 0 auto; }
+  .hero { text-align: center; background: linear-gradient(180deg, #fff3e8, #f3eaff); border-radius: 0 0 24px 24px; }
+  .hero h1 { font-size: 52px; line-height: 1.05; margin: 10px 0; }
+  .hero p { font-size: 18px; color: #444; max-width: 640px; margin: 0 auto 22px; }
+  .sqs-block-button, .sqs-button-element { display: inline-block; background: #111; color: #fff; padding: 13px 26px; border-radius: 8px; text-decoration: none; font-weight: 700; border: 0; cursor: pointer; }
+  .sqs-block-button.secondary { background: #fff; color: #111; border: 2px solid #111; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; }
+  .card { border: 1px solid #e5e5e5; border-radius: 14px; padding: 20px; background: #fff; }
+  .card img, .gallery img { width: 100%; height: 180px; object-fit: cover; border-radius: 10px; display: block; }
+  .gallery { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 14px; }
+  .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+  .price-card { border: 2px solid #ddd; border-radius: 14px; padding: 24px; text-align: center; background: #fff; }
+  .price { font-size: 36px; font-weight: 800; }
+  footer { background: #111; color: #fff; padding: 36px 32px; text-align: center; }
+  .logos { display: flex; gap: 28px; flex-wrap: wrap; font-weight: 800; color: #666; }
+  .stat { font-size: 40px; font-weight: 800; }
+  details { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">
+  <img src="oryne-logo.svg" alt="Oryne logo">
+  <span><b>Oryne demo</b> — ye ek fake Squarespace 7.1 site hai. Neeche right corner mein round <b>Oryne button</b> dabao, panel kholo, kisi bhi block par click karo, phir effect choose karo aur <b>Save</b> dabao. Refresh karne par saved effects wapas lag jayenge (localStorage).</span>
+</div>
+
+<!-- Header / Nav -->
+<header class="header" data-section-id="sec-header-001" data-block-id="block-header-001">
+  <div class="sqs-block" data-block-id="block-logo-001"><strong style="font-size:22px">◆ My Studio</strong></div>
+  <nav class="sqs-block" data-block-id="block-nav-001">
+    <a href="#services">Services</a><a href="#work">Work</a><a href="#pricing">Pricing</a><a href="#contact">Contact</a>
+  </nav>
+  <a class="sqs-block-button" data-block-id="block-cta-001" href="#contact">Book a Call</a>
+</header>
+
+<!-- Hero -->
+<section class="page-section hero" data-section-id="sec-hero-001">
+  <div class="sqs-block" data-block-id="block-hero-text-001">
+    <p style="letter-spacing:.15em;font-weight:700;color:#7b2fff">DESIGN STUDIO — EST. 2021</p>
+    <h1 data-block-id="block-hero-h1-001">We build websites that feel alive</h1>
+    <p data-block-id="block-hero-p-001">Clean design, fast pages, and small details that make visitors stop and look. Try Oryne on this very page.</p>
+    <a class="sqs-block-button" data-block-id="block-hero-btn-001" href="#work">See Our Work</a>
+    <a class="sqs-block-button secondary" data-block-id="block-hero-btn-002" href="#pricing">View Pricing</a>
+  </div>
+  <div class="sqs-block" data-block-id="block-hero-img-001" style="margin-top:28px">
+    <img src="https://picsum.photos/seed/oryne-hero/1100/420" alt="Studio work" style="width:100%;border-radius:16px">
+  </div>
+  <div class="sqs-block" data-block-id="block-countdown-001" style="margin-top:28px">
+    <p><strong>Spring offer ends in:</strong> — select this block, apply <em>Countdown Timer</em></p>
+  </div>
+</section>
+
+<!-- Services -->
+<section class="page-section" id="services" data-section-id="sec-services-001">
+  <div class="sqs-block" data-block-id="block-services-h-001"><h2>What we do</h2><p>Three services, one goal: a site you are proud to share.</p></div>
+  <div class="grid">
+    <div class="sqs-block card" data-block-id="block-service-1"><h3>Web Design</h3><p>Modern layouts, clear typography, and a site that works on every screen.</p></div>
+    <div class="sqs-block card" data-block-id="block-service-2"><h3>Branding</h3><p>Logos, colors, and a voice that sounds like you — not like everyone else.</p></div>
+    <div class="sqs-block card" data-block-id="block-service-3"><h3>Online Shop</h3><p>Simple checkout, clear pricing, and products that are easy to buy.</p></div>
+  </div>
+  <div class="sqs-block" data-block-id="block-stat-001" style="margin-top:28px;text-align:center">
+    <div class="stat" data-block-id="block-stat-num-001">250</div><p>Happy clients — select the number, apply <em>Number Counter</em></p>
+  </div>
+</section>
+
+<!-- Gallery / Work -->
+<section class="page-section" id="work" data-section-id="sec-work-001">
+  <div class="sqs-block" data-block-id="block-work-h-001"><h2>Recent work</h2><p>Hover effects try karo: Hover Zoom, Grayscale to Color, ya Tilt.</p></div>
+  <div class="sqs-block gallery" data-block-id="block-gallery-001">
+    <div data-block-id="block-img-1"><img src="https://picsum.photos/seed/oryne-a/600/400" alt="Project A"></div>
+    <div data-block-id="block-img-2"><img src="https://picsum.photos/seed/oryne-b/600/400" alt="Project B"></div>
+    <div data-block-id="block-img-3"><img src="https://picsum.photos/seed/oryne-c/600/400" alt="Project C"></div>
+  </div>
+  <div class="sqs-block" data-block-id="block-beforeafter-001" style="margin-top:20px;max-width:640px">
+    <img src="https://picsum.photos/seed/oryne-before/640/360" alt="Before">
+    <img src="https://picsum.photos/seed/oryne-after/640/360" alt="After">
+    <p>Before / After slider: is block par <em>Before / After Slider</em> lagao.</p>
+  </div>
+  <div class="sqs-block" data-block-id="block-logos-001" style="margin-top:28px">
+    <div class="logos"><span>ACME</span><span>NORTHWIND</span><span>HELLO CO.</span><span>PIXEL &amp; CO</span><span>BLUEBIRD</span></div>
+    <p>Logo carousel: is block par <em>Scrolling Logo Carousel</em> lagao.</p>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section class="page-section" data-section-id="sec-testimonials-001">
+  <div class="sqs-block" data-block-id="block-testimonials-001">
+    <h2>What clients say</h2>
+    <blockquote data-block-id="block-quote-1">“Our bookings doubled in a month. The new site finally looks like us.” — Sara, Café Owner</blockquote>
+    <blockquote data-block-id="block-quote-2">“Fast, clear, and easy to update. I stopped worrying about my website.” — Ali, Photographer</blockquote>
+    <blockquote data-block-id="block-quote-3">“The shop is simple for customers and simple for me. Perfect.” — Maria, Maker</blockquote>
+    <p>Testimonial slider: is block par <em>Testimonial Slider</em> lagao.</p>
+  </div>
+</section>
+
+<!-- Pricing -->
+<section class="page-section" id="pricing" data-section-id="sec-pricing-001">
+  <div class="sqs-block" data-block-id="block-pricing-h-001"><h2>Pricing</h2><p>Simple plans, no surprises.</p></div>
+  <div class="pricing">
+    <div class="sqs-block price-card" data-block-id="block-price-1"><h3>Starter</h3><div class="price">$49</div><p>One page, fast setup</p><a class="sqs-block-button" href="#contact">Choose</a></div>
+    <div class="sqs-block price-card" data-block-id="block-price-2"><h3>Business</h3><div class="price">$149</div><p>Full site + shop</p><a class="sqs-block-button" href="#contact">Choose</a></div>
+    <div class="sqs-block price-card" data-block-id="block-price-3"><h3>Pro</h3><div class="price">$299</div><p>Everything + support</p><a class="sqs-block-button" href="#contact">Choose</a></div>
+  </div>
+  <div class="sqs-block" data-block-id="block-faq-001" style="margin-top:28px">
+    <h3>FAQ</h3>
+    <details><summary>How long does a site take?</summary><p>Usually 1–2 weeks, depending on content.</p></details>
+    <details><summary>Can I update it myself?</summary><p>Yes — Squarespace editor plus Oryne makes it easy.</p></details>
+    <p>Accordion styling: is block par <em>Accordion Styling</em> lagao.</p>
+  </div>
+</section>
+
+
+<!-- NEW v2 showcase: Tabs, Calendar, Flex Cards, Smart Filter, Widgets -->
+<section class="page-section" data-section-id="sec-tabs-001">
+  <div class="sqs-block" data-block-id="block-tabs-001">
+    <h2>Vertical Tabs — try it</h2>
+    <div data-block-id="block-tab-1"><h3>Design</h3><p>We design clean, modern sites that load fast.</p></div>
+    <div data-block-id="block-tab-2"><h3>Branding</h3><p>Logos, colors and voice — all in one place.</p></div>
+    <div data-block-id="block-tab-3"><h3>Shop</h3><p>Simple checkout and clear pricing for customers.</p></div>
+    <p>Select this block, apply <em>Vertical Tabs</em>.</p>
+  </div>
+  <div class="sqs-block" data-block-id="block-calendar-001" style="margin-top:28px">
+    <h2>Event Calendar — try it</h2>
+    <p>Select this block, apply <em>Event Calendar</em>. Events: 2026-11-25 Launch Day, 2026-12-01 Workshop.</p>
+  </div>
+</section>
+<section class="page-section" data-section-id="sec-flex-001">
+  <div class="sqs-block" data-block-id="block-flex-001">
+    <h2>Flex Cards — try it</h2>
+    <div class="grid">
+      <div class="card" data-block-id="block-flex-1"><h3>Card One</h3><p>Hover — this card grows.</p></div>
+      <div class="card" data-block-id="block-flex-2"><h3>Card Two</h3><p>Hover — this card grows.</p></div>
+      <div class="card" data-block-id="block-flex-3"><h3>Card Three</h3><p>Hover — this card grows.</p></div>
+    </div>
+    <p>Select the grid block, apply <em>Flex Cards</em>.</p>
+  </div>
+  <div class="sqs-block" data-block-id="block-filter-001" style="margin-top:28px">
+    <h2>Smart Filter — try it</h2>
+    <div data-block-id="block-filter-1"><h3>Design Project</h3><p>A design case study.</p></div>
+    <div data-block-id="block-filter-2"><h3>Branding Project</h3><p>A branding case study.</p></div>
+    <div data-block-id="block-filter-3"><h3>Shop Project</h3><p>A shop case study.</p></div>
+    <p>Select this block, apply <em>Smart Filter</em> (filters: All, Design, Branding, Shop).</p>
+  </div>
+  <div class="sqs-block" data-block-id="block-widgets-001" style="margin-top:28px">
+    <h2>Widgets — try these on any block</h2>
+    <p>Back to Top Button, Loading Screen, Scroll Indicators, Cookie Banner, Live Chat Buttons, Custom Cursors, Search Bar, Slide-in Menu, Mobile Menu Designer, Video Popup Button — sab editor ke <b>Navigation / Widgets</b> categories mein hain. Search box mein likho: <em>tabs, calendar, cursor, cookie</em>.</p>
+    <p>Image shapes: Circle, Triangle, Parallel, Arrow, Spotlight — <b>Design</b> mein. Backgrounds: Animated Gradient, Dots, Grid, Glow Orb — bhi <b>Design</b> mein.</p>
+  </div>
+  <div class="sqs-block" data-block-id="block-blog-001" style="margin-top:28px">
+    <h2>From the blog</h2><p>How we redesigned a café website in one week — and what changed after launch.</p>
+    <p>Select this block, apply <em>Blog Post Banner</em>.</p>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer data-section-id="sec-footer-001" id="contact">
+  <div class="sqs-block" data-block-id="block-footer-001">
+    <h2 style="color:#fff">Ready to start?</h2>
+    <p>hello@example.com · Karachi, Pakistan</p>
+    <a class="sqs-block-button" data-block-id="block-footer-btn-001" href="mailto:hello@example.com">Email Us</a>
+    <p style="margin-top:24px;color:#888;font-size:13px">Demo site for testing Oryne — not a real Squarespace site. Images: picsum.photos.</p>
+  </div>
+</footer>
+
+<script src="plugin.js"></script>
+<script>
+  // Demo helpers: pre-fill a couple of gentle effects so first load already shows motion.
+  // Delete this block if you want a completely blank demo.
+  if (!localStorage.getItem('oryneConfig.v1')) {
+    window.__ORYNE_CONFIG__ = { version: 1, items: [
+      { target: '[data-block-id="block-hero-h1-001"]', effect: 'fade-up', options: { duration: 0.7, delay: 0 }, scope: 'single' },
+      { target: '[data-block-id="block-service-1"]', effect: 'fade-up', options: { duration: 0.7, delay: 0.1 }, scope: 'single' }
+    ]};
+  }
+</script>
+</body>
+</html>
