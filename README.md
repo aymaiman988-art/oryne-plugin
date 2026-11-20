@@ -209,3 +209,4 @@ Hide editor on a live site: add `?oryne=hide` to the URL, or set `window.__ORYNE
 ## License
 
 MIT License — see `LICENSE`. Free to use and modify for your own sites. Original code — please do not rebrand it as another paid plugin.
+Oryne demo live
