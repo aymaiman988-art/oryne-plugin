@@ -3,6 +3,29 @@
    workflow of loader-snippet + click-to-select editor + effects.
    No proprietary code, branding, logo or text was copied.
    v2.2: floating button + editor panel are draggable; positions saved in localStorage.
+   v2.3: ALL panel clicks go through ONE delegated handler on the panel element,
+   so Squarespace template/editor handlers can no longer swallow individual
+   button listeners (Expand all / Collapse all did nothing on real Squarespace
+   sites while the demo worked). CSS hardening to match — see plugin.css v2.3 block.
+   v2.4: EDIT MODE fix — the user designs in Squarespace Edit mode and it must
+   work there. ROOT CAUSE FOUND: editorState was declared AFTER the boot()
+   call, so with the loader's <script defer> boot() ran while
+   editorState was still undefined — refreshBlockList() threw, the IIFE aborted
+   and categories stayed empty forever on Squarespace while the demo worked.
+   Declaration moved above boot(). Rendering is also exception-proof (a failing
+   block scan or one bad category can no longer blank the whole panel), a
+   pointerup fallback fires panel/FAB actions when the editor swallows the
+   click event itself, and the block list + effects re-render ~800ms after boot
+   for the editor iframe whose content loads late. Edit mode is the supported
+   way to design. "All of this type" is the default scope (Single is still
+   available on the toggle) — a GENERAL rule for every effect and every type:
+   any effect on one image hits all images, on one button hits all buttons,
+   on one heading hits all headings of that level only (H1 -> h1, H2 -> h2,
+   up to H4); paragraph, section, block and header likewise.
+   Deselect: Apply dobara dabao to effect deselect ho jata hai (preview hat
+   jata hai), "Clear selection" button effect + block dono clear karta hai,
+   aur dobara usi block par tap karne se block deselect hota hai. Saved
+   effects untouched rehte hain — sirf current preview/selection clear hoti hai.
    Usage: paste the loader snippet in Squarespace Code Injection (Header).
    Config lives in window.__ORYNE_CONFIG__ or localStorage (demo).
 */
@@ -79,6 +102,7 @@
     if (el.dataset.oryneParallax) return; el.dataset.oryneParallax = '1';
     var speed = parseFloat(o.speed) || 0.25;
     window.addEventListener('scroll', function () {
+      if (!el.dataset.oryneParallax) return; /* v2.4 deselect: flag hatne par listener bekaar ho jata hai */
       var r = el.getBoundingClientRect();
       if (r.bottom > 0 && r.top < window.innerHeight) el.style.transform = 'translateY(' + ((window.innerHeight / 2 - (r.top + r.height / 2)) * speed * 0.2) + 'px)';
     }, { passive: true });
@@ -296,7 +320,7 @@
   cssEffect('bg-color-cycle', 'Color Cycle Background', 'Backgrounds', 'Background rang badalta rahe', ['section', 'block'], []);
   jsEffect('bg-scroll-color', 'Scroll Color Background', 'Backgrounds', 'Scroll par background rang badle', ['section'], [colorOpt('color1', 'Color 1', '#fff3e8'), colorOpt('color2', 'Color 2', '#f3eaff')], function (el, o) {
     if (el.dataset.oryneBgScroll) return; el.dataset.oryneBgScroll = '1';
-    window.addEventListener('scroll', function () { var r = el.getBoundingClientRect(); el.style.background = (r.top < window.innerHeight / 2) ? (o.color2 || '#f3eaff') : (o.color1 || '#fff3e8'); }, { passive: true });
+    window.addEventListener('scroll', function () { if (!el.dataset.oryneBgScroll) return; /* v2.4 deselect */ var r = el.getBoundingClientRect(); el.style.background = (r.top < window.innerHeight / 2) ? (o.color2 || '#f3eaff') : (o.color1 || '#fff3e8'); }, { passive: true });
   });
 
   /* ---- Block Designer (4) ---- */
@@ -486,6 +510,12 @@
     });
   }
 
+  /* v2.4 deselect (oryne-deselect): which JS effect set which init flag, and
+     which effects rewrite the element's text. Deselect only ever clears the
+     CURRENT effect's own flag/text — a saved effect of another type on the
+     same element is never touched. */
+  var JS_UNDO_FLAGS = { 'parallax': ['oryneParallax'], 'typewriter': ['oryneTyped'], 'word-loop': ['oryneLoop'], 'testimonial-slider': ['oryneSlider'], 'logo-carousel': ['oryneLogo'], 'number-counter': ['oryneCount'], 'before-after': ['oryneBA'], 'bg-scroll-color': ['oryneBgScroll'], 'vertical-tabs': ['oryneTabs'], 'flex-cards': ['oryneFlex'], 'video-block-designer': ['oryneVideo'] };
+  var TEXT_FX = { 'typewriter': true, 'word-loop': true, 'number-counter': true };
   function applyEffect(el, item) {
     var fx = EFFECTS[item.effect]; if (!fx || !el) return;
     el.classList.add(fx.cssClass);
@@ -494,7 +524,12 @@
       if (observer) observer.observe(el);
       else el.classList.add('oryne-visible');
     }
-    if (fx.js) { try { fx.js(el, item.options || {}); } catch (e) { /* effect failed, page must keep working */ } }
+    if (fx.js) {
+      try { /* v2.4 deselect: text-rewriting effects save the original text first, so deselect can restore it. */
+        if (TEXT_FX[item.effect] && el.dataset.oryneOrigText === undefined) el.dataset.oryneOrigText = el.textContent;
+      } catch (e) {}
+      try { fx.js(el, item.options || {}); } catch (e) { /* effect failed, page must keep working */ }
+    }
   }
 
   function applyConfig(cfg) {
@@ -508,54 +543,116 @@
   }
 
   /* ---------- Target helpers (Squarespace 7.1 DOM) ---------- */
-  var SELECTABLE = 'section[data-section-id], [data-block-id], .sqs-block, header, .header, h1, h2, h3, p, img, a.sqs-block-button, .sqs-block-button, button';
+  var SELECTABLE = 'section[data-section-id], [data-block-id], .sqs-block, header, .header, h1, h2, h3, h4, p, img, a.sqs-block-button, .sqs-block-button, button';
   function detectType(el) {
-    if (!el) return 'any';
-    if (el.closest('header') || el.tagName === 'HEADER') return 'header';
-    if (el.matches('a.sqs-block-button, .sqs-block-button, button, .sqs-button-element')) return 'button';
-    if (el.tagName === 'IMG' || el.classList.contains('sqs-block-image')) return 'image';
-    if (/^H[123]$/.test(el.tagName) || el.tagName === 'P') return 'text';
-    if (el.tagName === 'SECTION' || el.dataset.sectionId) return 'section';
-    if (el.dataset.blockId) return 'block';
-    return 'any';
+    try {
+      if (!el) return 'any';
+      if (el.closest('header') || el.tagName === 'HEADER') return 'header';
+      if (el.matches('a.sqs-block-button, .sqs-block-button, button, .sqs-button-element')) return 'button';
+      if (el.tagName === 'IMG' || el.classList.contains('sqs-block-image')) return 'image';
+      if (/^H[1234]$/.test(el.tagName) || el.tagName === 'P') return 'text';
+      if (el.tagName === 'SECTION' || el.dataset.sectionId) return 'section';
+      if (el.dataset.blockId) return 'block';
+      return 'any';
+    } catch (err) { return 'any'; } /* v2.4: editor-injected nodes must never throw here */
   }
   function selectorFor(el) {
-    if (!el) return 'body';
-    if (el.dataset && el.dataset.blockId) return '[data-block-id="' + el.dataset.blockId + '"]';
-    if (el.dataset && el.dataset.sectionId) return '[data-section-id="' + el.dataset.sectionId + '"]';
-    if (el.id) return '#' + el.id;
-    var path = [], node = el;
-    while (node && node !== document.body && path.length < 4) {
-      var tag = node.tagName.toLowerCase();
-      var sibs = node.parentNode ? Array.prototype.filter.call(node.parentNode.children, function (c) { return c.tagName === node.tagName; }) : [node];
-      path.unshift(tag + (sibs.length > 1 ? ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')' : ''));
-      node = node.parentNode;
-    }
-    return path.join(' > ');
+    try {
+      if (!el) return 'body';
+      if (el.dataset && el.dataset.blockId) return '[data-block-id="' + el.dataset.blockId + '"]';
+      if (el.dataset && el.dataset.sectionId) return '[data-section-id="' + el.dataset.sectionId + '"]';
+      if (el.id) return '#' + el.id;
+      var path = [], node = el;
+      while (node && node !== document.body && path.length < 4) {
+        var tag = node.tagName.toLowerCase();
+        var sibs = node.parentNode ? Array.prototype.filter.call(node.parentNode.children, function (c) { return c.tagName === node.tagName; }) : [node];
+        path.unshift(tag + (sibs.length > 1 ? ':nth-of-type(' + (sibs.indexOf(node) + 1) + ')' : ''));
+        node = node.parentNode;
+      }
+      return path.join(' > ');
+    } catch (err) { return 'body'; } /* v2.4 */
   }
   function allSelectorFor(el) {
     var t = detectType(el);
     if (t === 'button') return '.sqs-block-button, a.sqs-button, .sqs-button-element, button';
-    if (t === 'text') return el.tagName && /^H[123]$/.test(el.tagName) ? 'h1, h2, h3' : 'p';
+    if (t === 'text') {
+      if (el.tagName && /^H[1234]$/.test(el.tagName)) return el.tagName.toLowerCase();
+      if (el.tagName === 'P') {
+        /* v2.4: paragraph styles are separate types — P1 hits P1s only, P2 hits
+           P2s only, P3 hits P3s only. Graceful fallback: if the size-class
+           selector matches nothing on this page (template without those
+           classes), fall back to all 'p' — never return a blank target. */
+        var sel;
+        if (el.classList.contains('sqsrte-large')) sel = 'p.sqsrte-large';
+        else if (el.classList.contains('sqsrte-small')) sel = 'p.sqsrte-small';
+        else sel = 'p:not(.sqsrte-large):not(.sqsrte-small)';
+        try { if (document.querySelectorAll(sel).length) return sel; } catch (err) {}
+        return 'p';
+      }
+      return 'p';
+    }
     if (t === 'image') return 'img';
     if (t === 'section') return 'section[data-section-id], .page-section';
     if (t === 'header') return 'header, .header';
     if (t === 'block') return '[data-block-id], .sqs-block';
     return '[data-block-id], .sqs-block';
   }
+  /* v2.4: "All of this type" is the default — human-readable scope label, so
+     the user can see exactly what an effect will hit before saving. */
+  function scopeLabelFor(el) {
+    if (!el) return '';
+    if (editorState.scope !== 'all') return 'Only this element';
+    var t = detectType(el);
+    if (t === 'text') {
+      if (el.tagName && /^H[1234]$/.test(el.tagName)) return 'All ' + el.tagName + ' headings (site-wide)';
+      if (el.tagName === 'P') return 'All ' + paraStyleLabel(el) + ' (site-wide)';
+      return 'All paragraphs (site-wide)';
+    }
+    if (t === 'button') return 'All buttons (site-wide)';
+    if (t === 'image') return 'All images (site-wide)';
+    if (t === 'section') return 'All sections (site-wide)';
+    if (t === 'header') return 'All headers (site-wide)';
+    if (t === 'block') return 'All blocks of this type (site-wide)';
+    return 'All elements of this type (site-wide)';
+  }
+  /* v2.4: Squarespace 7.1 paragraph styles (verified against Squarespace docs/
+     community references): Paragraph 1 = p.sqsrte-large, Paragraph 2 = plain p
+     (no size class), Paragraph 3 = p.sqsrte-small. */
+  function paraStyleLabel(el) {
+    try {
+      if (el.classList.contains('sqsrte-large')) return 'Paragraph 1';
+      if (el.classList.contains('sqsrte-small')) return 'Paragraph 3';
+    } catch (err) {}
+    return 'Paragraph 2';
+  }
   function labelFor(el) {
-    if (!el) return 'Nothing selected';
-    var id = el.dataset && (el.dataset.blockId || el.dataset.sectionId);
-    return detectType(el) + ' · ' + el.tagName.toLowerCase() + (id ? ' · ' + id.slice(0, 18) : '') + ' · ' + (el.textContent || '').trim().slice(0, 40);
+    try {
+      if (!el) return 'Nothing selected';
+      var id = el.dataset && (el.dataset.blockId || el.dataset.sectionId);
+      var type = detectType(el);
+      if (el.tagName === 'P') type = paraStyleLabel(el); /* v2.4: show which paragraph style */
+      return type + ' · ' + el.tagName.toLowerCase() + (id ? ' · ' + id.slice(0, 18) : '') + ' · ' + (el.textContent || '').trim().slice(0, 40);
+    } catch (err) { return 'Block'; } /* v2.4: one unreadable element must never kill the list */
   }
 
   /* ---------- Public API ---------- */
   window.Oryne = {
-    version: '2.2.0', EFFECTS: EFFECTS,
+    version: '2.4.0', EFFECTS: EFFECTS,
     refresh: function () { applyConfig(loadConfig()); },
     getConfig: loadConfig,
     applyConfig: applyConfig
   };
+
+  /* v2.4 ROOT CAUSE (found by testing): editorState MUST be declared before
+     boot() can run. The loader snippet uses <script defer>, so on Squarespace
+     readyState is already past 'loading' and boot() runs immediately — but
+     editorState used to be declared AFTER the boot() call, so it was still
+     undefined: refreshBlockList() threw, the IIFE aborted, editorState was
+     never initialised, and every later renderEffects() threw too — empty
+     categories + empty block list + dead Expand/Collapse, exactly as seen in
+     the user's Edit-mode screenshot. The demo loads without defer, so it took
+     the DOMContentLoaded path and worked. Moving the declaration up fixes it. */
+  var editorState = { selectedEl: null, selectedEffect: null, scope: 'all', options: {}, openCat: 'Typography', pickMode: false, blockList: [] };
 
   function boot() {
     applyConfig(loadConfig());
@@ -567,7 +664,6 @@
   else boot();
 
   /* ---------- Editor: floating button + right-side panel ---------- */
-  var editorState = { selectedEl: null, selectedEffect: null, scope: 'single', options: {}, openCat: 'Typography', pickMode: false, blockList: [] };
 
   function buildEditor() {
     if (window.__ORYNE_NO_EDITOR__) return;
@@ -589,9 +685,10 @@
       '<div class="oryne-selected-info" data-role="selected">Select a block: click any text, image, button or section on the page while this panel is open.</div>' +
       '<button class="oryne-btn oryne-btn-primary oryne-pick-btn" data-act="pick" type="button">\u{1F446} Block choose karo</button>' +
       '<div class="oryne-field"><label>Block list se choose karo</label><select class="oryne-blocklist" data-role="blocklist"><option value="">\u2014 List se block choose karo \u2014</option></select></div>' +
-      '<div class="oryne-scope"><button type="button" data-scope="single" class="active">Single element</button><button type="button" data-scope="all">All of this type</button></div>' +
+      '<div class="oryne-scope"><button type="button" data-scope="single">Single element</button><button type="button" data-scope="all" class="active">All of this type</button></div>' +
+      '<button class="oryne-btn oryne-deselect-btn" data-act="deselect" type="button">✕ Clear selection</button>' +
       '<div data-role="options"></div><input class="oryne-search" data-role="search" type="search" placeholder="Search effects... (e.g. tabs, calendar, cursor)"><div class="oryne-cat-tools"><button type="button" class="oryne-btn" data-act="expand-all">Expand all \u25BE</button><button type="button" class="oryne-btn" data-act="collapse-all">Collapse all \u25B8</button></div><div data-role="effects"></div><div data-role="applied"></div>' +
-      '<div class="oryne-field"><label>Generated footer code (paste in Code Injection &gt; Footer)</label>' +
+      '<div class="oryne-field"><label>Generated footer code — ALL saved effects, ek hi code (Footer mein ek baar paste karo)</label>' +
       '<textarea class="oryne-code" data-role="code" readonly placeholder="Click Generate Code after saving…"></textarea></div>' +
       '</div>' +
       '<div class="oryne-panel-foot">' +
@@ -634,18 +731,140 @@
     }
     fab.addEventListener('pointerup', fabDragEnd);
     fab.addEventListener('pointercancel', fabDragEnd);
-    fab.addEventListener('click', function () { if (fabDragged) { fabDragged = false; return; } panel.classList.toggle('oryne-open'); refreshBlockList(); renderEffects(); renderApplied(); });
-    panel.querySelector('[data-act="pick"]').addEventListener('click', function () {
-      editorState.pickMode = true; panel.classList.remove('oryne-open'); showPickBanner();
+    /* v2.4: FAB toggle through one function shared by click + pointerup fallback.
+       In Squarespace Edit mode the editor can swallow the click event itself
+       (capture-phase handlers that select blocks). The pointerup fallback runs
+       the toggle ~350ms later only if no click ran — dedup by source + time so
+       a real click never double-toggles the panel. A drag never reaches here
+       (fabDragged is still true at pointerup time). */
+    var lastFabHandled = { time: 0, source: '' };
+    function togglePanel(source) {
+      var now = Date.now();
+      if (source === 'click' && lastFabHandled.source === 'pointerup' && now - lastFabHandled.time < 400) return;
+      if (source === 'pointerup' && lastFabHandled.source === 'click' && now - lastFabHandled.time < 500) return;
+      lastFabHandled = { time: now, source: source };
+      panel.classList.toggle('oryne-open'); safeRefreshBlockList(); safeRenderEffects(); safeRenderApplied();
+    }
+    fab.addEventListener('click', function () { if (fabDragged) { fabDragged = false; return; } togglePanel('click'); });
+    fab.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      if (fabDragged) return;
+      setTimeout(function () { togglePanel('pointerup'); }, 350);
     });
-    panel.querySelector('[data-act="expand-all"]').addEventListener('click', function () { editorState.openCat = '__all__'; renderEffects(); });
-    panel.querySelector('[data-act="collapse-all"]').addEventListener('click', function () { editorState.openCat = null; renderEffects(); });
+    /* v2.3: ONE delegated click handler for the whole panel (oryne-panel-click-delegate).
+       Why: on real Squarespace sites the old per-button listeners, attached once at
+       startup, could be swallowed or go stale — Squarespace template + editor scripts
+       attach their own document-level handlers, and renderEffects() recreates the
+       category/Apply buttons on every render. A single listener on the panel itself
+       survives every re-render, and stopPropagation() here keeps Squarespace's
+       document handlers from eating the click afterwards. This is the ONLY click
+       handler for panel buttons — no direct listeners remain for these actions,
+       so Save/Apply can never double-fire. Clicks on inputs/selects/textarea
+       (search, block list, option fields) are ignored here and keep their own
+       input/change listeners below.
+       v2.4: the same action logic now lives in handlePanelButton(), shared with
+       the pointerup fallback below (oryne-panel-pointerup-fallback). In Edit
+       mode Squarespace's editor can swallow the click event itself in its
+       capture phase, before it ever reaches this listener — the pointerup
+       fallback fires the same action ~350ms later only if no click ran, with
+       cross-source dedup (runPanelAction) so a real click never double-fires. */
+    var lastPanelHandled = { key: '', time: 0, source: '' };
+    function panelActionKey(t) {
+      var act = t.getAttribute('data-act'); if (act) return 'act:' + act;
+      var s = t.getAttribute('data-scope'); if (s) return 'scope:' + s;
+      var a = t.getAttribute('data-apply'); if (a) return 'apply:' + a;
+      var r = t.getAttribute('data-remove'); if (r !== null) return 'remove:' + r;
+      if (t.classList.contains('oryne-cat-btn')) return 'cat:' + (t.getAttribute('data-cat') || '');
+      return '';
+    }
+    function handlePanelButton(t) {
+      var act = t.getAttribute('data-act');
+      var scopeBtn = t.getAttribute('data-scope');
+      var applyId = t.getAttribute('data-apply');
+      var removeIdx = t.getAttribute('data-remove');
+      var catBtn = t.classList.contains('oryne-cat-btn') ? t : null;
+      if (act === 'close') { panel.classList.remove('oryne-open'); return; }
+      if (act === 'pick') { editorState.pickMode = true; panel.classList.remove('oryne-open'); showPickBanner(); return; }
+      if (act === 'deselect') { deselectAll(); return; } /* v2.4: Deselect / Clear selection button — effect + block dono clear */
+      if (act === 'expand-all') { editorState.openCat = '__all__'; safeRenderEffects(); return; }
+      if (act === 'collapse-all') { editorState.openCat = null; safeRenderEffects(); return; }
+      if (act === 'save') { saveCurrent(); return; }
+      if (act === 'generate') { generateCode(); return; }
+      if (act === 'copy') { var ta = panel.querySelector('[data-role="code"]'); if (ta.value) { ta.select(); document.execCommand('copy'); } return; }
+      if (act === 'export') { exportJSON(); return; }
+      if (act === 'import') { panel.querySelector('[data-role="file"]').click(); return; }
+      if (act === 'reset') {
+        if (!confirm('Reset all Oryne effects?')) return;
+        saveConfig(defaultConfig()); location.reload(); return;
+      }
+      if (act === 'reset-pos') {
+        try { LS.removeItem(FAB_POS_KEY); LS.removeItem(PANEL_POS_KEY); } catch (err) {}
+        fab.style.left = ''; fab.style.top = ''; fab.style.right = ''; fab.style.bottom = '';
+        panel.style.left = ''; panel.style.top = ''; panel.style.right = ''; panel.style.bottom = ''; panel.style.height = '';
+        return;
+      }
+      if (scopeBtn) {
+        editorState.scope = scopeBtn;
+        panel.querySelectorAll('[data-scope]').forEach(function (x) { x.classList.toggle('active', x === t); });
+        updateSelectedInfo(); safePreviewCurrent(); /* v2.4: scope badalte hi info + live preview update ho — jo dikhe wahi save hoga */
+        return;
+      }
+      if (catBtn) {
+        var cat = catBtn.getAttribute('data-cat');
+        editorState.openCat = (editorState.openCat === cat) ? null : cat; safeRenderEffects(); return;
+      }
+      if (applyId) {
+        var fx = EFFECTS[applyId]; if (!fx) return;
+        if (editorState.selectedEffect === applyId) { deselectEffect(); return; } /* v2.4: dobara Apply dabana = deselect (toggle) */
+        editorState.selectedEffect = applyId; editorState.options = {};
+        (fx.options || []).forEach(function (o) { editorState.options[o.key] = o.default; });
+        safeRenderOptions(); safeRenderEffects(); safePreviewCurrent(); return;
+      }
+      if (removeIdx !== null) {
+        var c = loadConfig(); c.items.splice(parseInt(removeIdx, 10), 1); saveConfig(c); location.reload(); return;
+      }
+    }
+    function runPanelAction(t, source) {
+      var key = panelActionKey(t); var now = Date.now();
+      if (key && lastPanelHandled.key === key && now - lastPanelHandled.time < 500) {
+        if (source === 'click' && lastPanelHandled.source === 'pointerup') return false;
+        if (source === 'pointerup' && lastPanelHandled.source === 'click') return false;
+      }
+      lastPanelHandled = { key: key, time: now, source: source };
+      handlePanelButton(t);
+      return true;
+    }
+    panel.addEventListener('click', function (e) {
+      var t = (e.target && e.target.closest) ? e.target.closest('button') : null;
+      if (!t || !panel.contains(t)) return;
+      if (!panelActionKey(t)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      runPanelAction(t, 'click');
+    });
+    panel.addEventListener('pointerup', function (e) {
+      if (e.pointerType === 'mouse' && e.button !== 0) return;
+      var t = (e.target && e.target.closest) ? e.target.closest('button') : null;
+      if (!t || !panel.contains(t)) return;
+      var key = panelActionKey(t); if (!key) return;
+      /* Header drag ends here too, but a drag retargets pointer events to the
+         header (pointer capture), so its target is the header, not a button.
+         Only the header's close button is a real button tap — allow that. */
+      if (t.closest('.oryne-panel-head') && t.getAttribute('data-act') !== 'close') return;
+      setTimeout(function () {
+        if (lastPanelHandled.key === key && lastPanelHandled.source === 'click' && Date.now() - lastPanelHandled.time < 500) return;
+        runPanelAction(t, 'pointerup');
+      }, 350);
+    });
     panel.querySelector('[data-role="blocklist"]').addEventListener('change', function (e) {
       var idx = parseInt(e.target.value, 10); var el = editorState.blockList[idx];
       if (!el) return; el.scrollIntoView({ behavior: 'smooth', block: 'center' }); selectElement(el);
     });
-    panel.querySelector('[data-role="search"]').addEventListener('input', function (e) { editorState.query = e.target.value; renderEffects(); });
-    panel.querySelector('[data-act="close"]').addEventListener('click', function () { panel.classList.remove('oryne-open'); });
+    panel.querySelector('[data-role="search"]').addEventListener('input', function (e) { editorState.query = e.target.value; safeRenderEffects(); });
+    /* v2.3: close / scope / save / generate / copy / export / import / reset /
+       reset-pos clicks are handled ONLY by the delegated panel handler above —
+       the old direct listeners were removed so nothing can double-fire. */
+    panel.querySelector('[data-role="file"]').addEventListener('change', importJSON);
     /* v2.2: editor panel draggable by its header (mouse + touch). Close button still closes. */
     var panelHead = panel.querySelector('.oryne-panel-head');
     panelHead.classList.add('oryne-drag-handle');
@@ -696,27 +915,7 @@
         fab.style.top = Math.max(0, Math.min(f.top, Math.max(0, window.innerHeight - 56))) + 'px';
       }
     });
-    panel.querySelectorAll('[data-scope]').forEach(function (b) {
-      b.addEventListener('click', function () {
-        editorState.scope = b.dataset.scope;
-        panel.querySelectorAll('[data-scope]').forEach(function (x) { x.classList.toggle('active', x === b); });
-      });
-    });
-    panel.querySelector('[data-act="save"]').addEventListener('click', saveCurrent);
-    panel.querySelector('[data-act="generate"]').addEventListener('click', generateCode);
-    panel.querySelector('[data-act="copy"]').addEventListener('click', function () { var ta = panel.querySelector('[data-role="code"]'); if (ta.value) { ta.select(); document.execCommand('copy'); } });
-    panel.querySelector('[data-act="export"]').addEventListener('click', exportJSON);
-    panel.querySelector('[data-act="import"]').addEventListener('click', function () { panel.querySelector('[data-role="file"]').click(); });
     panel.querySelector('[data-role="file"]').addEventListener('change', importJSON);
-    panel.querySelector('[data-act="reset"]').addEventListener('click', function () {
-      if (!confirm('Reset all Oryne effects?')) return;
-      saveConfig(defaultConfig()); location.reload();
-    });
-    panel.querySelector('[data-act="reset-pos"]').addEventListener('click', function () {
-      try { LS.removeItem(FAB_POS_KEY); LS.removeItem(PANEL_POS_KEY); } catch (e) {}
-      fab.style.left = ''; fab.style.top = ''; fab.style.right = ''; fab.style.bottom = '';
-      panel.style.left = ''; panel.style.top = ''; panel.style.right = ''; panel.style.bottom = ''; panel.style.height = '';
-    });
 
     // Click-to-select: capture clicks while the panel is open.
     document.addEventListener('click', function (e) {
@@ -726,7 +925,12 @@
       var hit = e.target.closest ? e.target.closest(SELECTABLE) : null;
       if (!hit) return;
       e.preventDefault(); e.stopPropagation();
-      if (editorState.pickMode) { editorState.pickMode = false; hidePickBanner(); panel.classList.add('oryne-open'); refreshBlockList(); renderEffects(); }
+      if (editorState.pickMode) { editorState.pickMode = false; hidePickBanner(); panel.classList.add('oryne-open'); safeRefreshBlockList(); safeRenderEffects(); }
+      if (hit === editorState.selectedEl) { /* v2.4 deselect: dobara usi block par tap = block deselect (effect choice rehta hai, uska preview hat jata hai) */
+        clearPreview();
+        try { hit.classList.remove('oryne-selected'); } catch (e2) {}
+        editorState.selectedEl = null; updateSelectedInfo(); return;
+      }
       selectElement(hit);
     }, true);
     document.addEventListener('mouseover', function (e) {
@@ -745,24 +949,52 @@
       document.body.appendChild(b);
     }
     function hidePickBanner() { var b = document.querySelector('.oryne-pick-banner'); if (b) b.remove(); }
+    /* v2.4: exception-proof rendering (oryne-safe-render). In Squarespace Edit
+       mode the preview iframe is still loading and editor scripts mutate the
+       DOM while we render — one bad element or one bad category used to throw
+       and blank the whole panel (empty categories + empty block list, exactly
+       what the user saw in Edit mode). Every render path is guarded so a
+       failure is logged and skipped, never fatal. Categories do not depend on
+       page blocks at all, so they must render even when the block list is empty. */
+    function safeRefreshBlockList() { try { refreshBlockList(); } catch (err) { try { console.error('[Oryne] block list failed:', err); } catch (e2) {} } }
+    function safeRenderEffects() { try { renderEffects(); } catch (err) { try { console.error('[Oryne] effects render failed:', err); } catch (e2) {} } }
+    function safeRenderApplied() { try { renderApplied(); } catch (err) { try { console.error('[Oryne] saved-effects render failed:', err); } catch (e2) {} } }
+    function safeRenderOptions() { try { renderOptions(); } catch (err) { try { console.error('[Oryne] options render failed:', err); } catch (e2) {} } }
+    function safePreviewCurrent() { try { previewCurrent(); } catch (err) { try { console.error('[Oryne] preview failed:', err); } catch (e2) {} } }
     function refreshBlockList() {
       var sel = panel.querySelector('[data-role="blocklist"]'); if (!sel) return;
-      editorState.blockList = $$(SELECTABLE).filter(function (el, i, arr) { return arr.indexOf(el) === i; }).slice(0, 80);
+      var all = [];
+      try { all = $$(SELECTABLE); } catch (err) { try { console.error('[Oryne] block scan failed:', err); } catch (e2) {} }
+      editorState.blockList = all.filter(function (el, i, arr) {
+        if (arr.indexOf(el) !== i) return false;
+        try { if (el.closest && el.closest('.oryne-panel, .oryne-fab')) return false; } catch (e) {} /* v2.4: Oryne ke apne button/panel list mein na aayen */
+        return true;
+      }).slice(0, 80);
       sel.innerHTML = '<option value="">\u2014 List se block choose karo \u2014</option>';
       editorState.blockList.forEach(function (el, i) {
-        var o = document.createElement('option'); o.value = String(i); o.textContent = (i + 1) + '. ' + labelFor(el); sel.appendChild(o);
+        var label;
+        try { label = labelFor(el); } catch (err) { return; } /* v2.4: one bad element must not kill the list */
+        var o = document.createElement('option'); o.value = String(i); o.textContent = (i + 1) + '. ' + label; sel.appendChild(o);
       });
+    }
+    /* v2.4: info line shows what the effect will actually hit. */
+    function updateSelectedInfo() {
+      var info = panel.querySelector('[data-role="selected"]'); if (!info) return;
+      if (!editorState.selectedEl) { info.textContent = 'Select a block: click any text, image, button or section on the page while this panel is open.'; return; }
+      info.textContent = 'Selected: ' + labelFor(editorState.selectedEl) + '  ·  ' + scopeLabelFor(editorState.selectedEl);
     }
     function selectElement(el) {
       if (editorState.selectedEl) editorState.selectedEl.classList.remove('oryne-selected');
       editorState.selectedEl = el; el.classList.add('oryne-selected');
-      panel.querySelector('[data-role="selected"]').textContent = 'Selected: ' + labelFor(el) + '  ·  Scope: ' + editorState.scope;
-      renderApplied();
+      updateSelectedInfo();
+      safeRenderApplied();
     }
     function renderEffects() {
-      var host = panel.querySelector('[data-role="effects"]'); host.innerHTML = '';
+      var host = panel.querySelector('[data-role="effects"]'); if (!host) return;
+      host.innerHTML = '';
       var q = editorState.query ? editorState.query.toLowerCase() : '';
       CATEGORIES.forEach(function (cat) {
+        try { /* v2.4: one bad category must not blank the other seven */
         var ids = Object.keys(EFFECTS).filter(function (id) {
           var fx = EFFECTS[id]; if (fx.category !== cat) return false;
           if (q && (fx.name + ' ' + fx.desc + ' ' + id).toLowerCase().indexOf(q) === -1) return false;
@@ -772,22 +1004,20 @@
         var open = q ? true : (editorState.openCat === '__all__' || editorState.openCat === cat);
         var wrap = document.createElement('div'); wrap.className = 'oryne-cat-wrap';
         var head = document.createElement('button'); head.type = 'button'; head.className = 'oryne-cat-btn';
+        head.setAttribute('data-cat', cat);
         head.innerHTML = '<span>' + esc(cat) + '</span><span><span class="oryne-cat-count">' + ids.length + '</span><span class="oryne-cat-arrow">' + (open ? '\u25BE' : '\u25B8') + '</span></span>';
-        head.addEventListener('click', function () { editorState.openCat = (editorState.openCat === cat) ? null : cat; renderEffects(); });
+        /* v2.3: no direct listener here — the delegated panel handler toggles this category. */
         wrap.appendChild(head);
         var body = document.createElement('div'); body.className = 'oryne-cat-body' + (open ? ' oryne-open' : '');
         ids.forEach(function (id) {
           var fx = EFFECTS[id];
           var row = document.createElement('div'); row.className = 'oryne-effect' + (editorState.selectedEffect === id ? ' active' : '');
-          row.innerHTML = '<div><b>' + esc(fx.name) + '</b><small>' + esc(fx.desc) + '</small></div><button class="oryne-btn" type="button">Apply</button>';
-          row.querySelector('button').addEventListener('click', function () {
-            editorState.selectedEffect = id; editorState.options = {};
-            (fx.options || []).forEach(function (o) { editorState.options[o.key] = o.default; });
-            renderOptions(); renderEffects(); previewCurrent();
-          });
+          row.innerHTML = '<div><b>' + esc(fx.name) + '</b><small>' + esc(fx.desc) + '</small></div><button class="oryne-btn" type="button" data-apply="' + esc(id) + '">' + (editorState.selectedEffect === id ? '✓ Applied' : 'Apply') + '</button>';
+          /* v2.3: no direct listener here — the delegated panel handler applies this effect. */
           body.appendChild(row);
         });
         wrap.appendChild(body); host.appendChild(wrap);
+        } catch (err) { try { console.error('[Oryne] category render failed:', cat, err); } catch (e2) {} }
       });
     }
     function renderOptions() {
@@ -795,6 +1025,7 @@
       var fx = EFFECTS[editorState.selectedEffect]; if (!fx) return;
       var title = document.createElement('div'); title.className = 'oryne-cat'; title.textContent = 'Options: ' + fx.name; host.appendChild(title);
       (fx.options || []).forEach(function (o) {
+        try { /* v2.4: one bad option (e.g. Gradient Heading colour) must not blank the options */
         var wrap = document.createElement('div'); wrap.className = 'oryne-field';
         var lab = document.createElement('label'); lab.textContent = o.label + (o.type === 'range' ? ' (' + editorState.options[o.key] + (o.unit || '') + ')' : '');
         wrap.appendChild(lab);
@@ -803,9 +1034,10 @@
         else if (o.type === 'color') { input = document.createElement('input'); input.type = 'color'; input.value = editorState.options[o.key]; }
         else if (o.type === 'range') { input = document.createElement('input'); input.type = 'range'; input.min = o.min; input.max = o.max; input.step = o.step || 1; input.value = editorState.options[o.key]; }
         else { input = document.createElement('input'); input.type = 'text'; input.value = editorState.options[o.key]; }
-        input.addEventListener('input', function () { editorState.options[o.key] = o.type === 'range' ? parseFloat(input.value) : input.value; if (o.type === 'range') lab.textContent = o.label + ' (' + input.value + (o.unit || '') + ')'; previewCurrent(); });
-        input.addEventListener('change', function () { if (o.type === 'select') { editorState.options[o.key] = input.value; previewCurrent(); } });
+        input.addEventListener('input', function () { editorState.options[o.key] = o.type === 'range' ? parseFloat(input.value) : input.value; if (o.type === 'range') lab.textContent = o.label + ' (' + input.value + (o.unit || '') + ')'; safePreviewCurrent(); });
+        input.addEventListener('change', function () { if (o.type === 'select') { editorState.options[o.key] = input.value; safePreviewCurrent(); } });
         wrap.appendChild(input); host.appendChild(wrap);
+        } catch (err) { try { console.error('[Oryne] option render failed:', o && o.key, err); } catch (e2) {} }
       });
       if (!(fx.options || []).length) { var p = document.createElement('p'); p.textContent = 'No options — just click Save.'; host.appendChild(p); }
     }
@@ -817,12 +1049,58 @@
       var item = currentItem(); if (!item) return;
       $$(item.target).forEach(function (el) { applyEffect(el, item); });
     }
+    /* v2.4 deselect (oryne-deselect): removes ONLY the live preview of the
+       currently selected effect — its classes, its option vars, its own JS
+       init flag, and (for text-rewriting effects) the original text.
+       Saved effects are never touched: if a saved item covers the same
+       element with the same effect, that element keeps its visual. The
+       preview is cleared from BOTH the 'all' and the 'single' targets, in
+       case the scope was changed after applying. */
+    function clearPreview() {
+      var el = editorState.selectedEl, fx = EFFECTS[editorState.selectedEffect];
+      if (!el || !fx) return;
+      var saved = [];
+      try { saved = loadConfig().items.filter(function (x) { return x.effect === editorState.selectedEffect; }); } catch (e) {}
+      var targets = [];
+      try { targets.push(allSelectorFor(el)); } catch (e) {}
+      try { targets.push(selectorFor(el)); } catch (e) {}
+      var flags = JS_UNDO_FLAGS[editorState.selectedEffect] || [];
+      targets.forEach(function (t) {
+        var els = [];
+        try { els = $$(t); } catch (e) {}
+        els.forEach(function (x) {
+          var keep = false;
+          saved.forEach(function (s) { try { if (x.matches(s.target)) keep = true; } catch (e2) {} });
+          if (keep) return; /* saved effect owns this element's visual — it stays */
+          try {
+            x.classList.remove(fx.cssClass);
+            x.classList.remove('oryne-visible');
+            (fx.options || []).forEach(function (o) { var vn = VAR_NAMES[o.key]; if (vn) x.style.removeProperty(vn); });
+            if (editorState.selectedEffect === 'parallax') x.style.transform = '';
+            if (editorState.selectedEffect === 'bg-scroll-color') x.style.background = '';
+            if (TEXT_FX[editorState.selectedEffect] && x.dataset.oryneOrigText !== undefined) { x.textContent = x.dataset.oryneOrigText; delete x.dataset.oryneOrigText; }
+            flags.forEach(function (f) { delete x.dataset[f]; });
+          } catch (e2) {}
+        });
+      });
+    }
+    function deselectEffect() { /* effect deselect — block selection rehti hai, user doosra effect try kar sakta hai */
+      clearPreview();
+      editorState.selectedEffect = null; editorState.options = {};
+      safeRenderOptions(); safeRenderEffects();
+    }
+    function deselectAll() { /* Deselect button — effect + block dono clear */
+      clearPreview();
+      editorState.selectedEffect = null; editorState.options = {};
+      if (editorState.selectedEl) { try { editorState.selectedEl.classList.remove('oryne-selected'); } catch (e) {} editorState.selectedEl = null; }
+      updateSelectedInfo(); safeRenderOptions(); safeRenderEffects();
+    }
     function saveCurrent() {
       var item = currentItem();
       if (!item) { alert('Pehle koi element select karo, phir koi effect choose karo.'); return; }
       var cfg = loadConfig();
       cfg.items = cfg.items.filter(function (x) { return !(x.target === item.target && x.effect === item.effect); });
-      cfg.items.push(item); saveConfig(cfg); renderApplied();
+      cfg.items.push(item); saveConfig(cfg); safeRenderApplied();
       panel.querySelector('[data-role="selected"]').textContent = 'Saved: ' + item.effect + ' on ' + item.target;
     }
     function renderApplied() {
@@ -830,10 +1108,12 @@
       var cfg = loadConfig(); if (!cfg.items.length) return;
       var h = document.createElement('div'); h.className = 'oryne-cat'; h.textContent = 'Saved effects (' + cfg.items.length + ')'; host.appendChild(h);
       cfg.items.forEach(function (item, i) {
+        try { /* v2.4: one bad saved item must not blank the saved list */
         var row = document.createElement('div'); row.className = 'oryne-effect';
-        row.innerHTML = '<div><b>' + esc(item.effect) + '</b><small>' + esc(item.target) + ' · ' + esc(item.scope || 'single') + '</small></div><button class="oryne-btn" type="button">Remove</button>';
-        row.querySelector('button').addEventListener('click', function () { var c = loadConfig(); c.items.splice(i, 1); saveConfig(c); location.reload(); });
+        row.innerHTML = '<div><b>' + esc(item.effect) + '</b><small>' + esc(item.target) + ' · ' + esc(item.scope || 'single') + '</small></div><button class="oryne-btn" type="button" data-remove="' + i + '">Remove</button>';
+        /* v2.3: no direct listener here — the delegated panel handler removes this item. */
         host.appendChild(row);
+        } catch (err) { try { console.error('[Oryne] saved-item render failed:', err); } catch (e2) {} }
       });
     }
     function generateCode() {
@@ -854,6 +1134,12 @@
       reader.onload = function () { try { var c = JSON.parse(reader.result); if (c && c.items) { saveConfig(c); location.reload(); } } catch (err) { alert('Invalid JSON file.'); } };
       reader.readAsText(file);
     }
-    refreshBlockList(); renderEffects();
+    /* v2.4: render the categories even if the block list fails — they are
+       independent (see the safe* wrappers above: refreshBlockList can no
+       longer throw past renderEffects). Delayed re-render for the Edit-mode
+       iframe, whose content may still be loading at boot. */
+    safeRefreshBlockList();
+    safeRenderEffects();
+    setTimeout(function () { safeRefreshBlockList(); safeRenderEffects(); }, 800);
   }
 })();

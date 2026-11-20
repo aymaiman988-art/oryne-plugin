@@ -369,3 +369,107 @@
   flex: 0 0 auto; border: 1px solid #fff; background: transparent; color: #fff;
   border-radius: 8px; padding: 7px 12px; cursor: pointer; font-size: 13px;
 }
+
+/* ---------- Oryne v2.3: panel clicks cannot be disabled by Squarespace ---------- */
+/* Real Squarespace sites broke Expand all / Collapse all + category headers while
+   the demo worked: Squarespace template styles / editor handlers can disable or
+   swallow button clicks. These rules make every panel click target explicitly
+   clickable again. The panel header keeps touch-action:none (panel drag) and the
+   FAB keeps its own touch-action:none (FAB drag) — only panel buttons change. */
+.oryne-panel,
+.oryne-panel-body,
+.oryne-panel button,
+.oryne-cat-btn,
+.oryne-cat-tools {
+  pointer-events: auto !important;
+}
+.oryne-panel button,
+.oryne-cat-btn,
+.oryne-cat-tools {
+  touch-action: manipulation !important;
+}
+.oryne-cat-tools,
+.oryne-cat-btn {
+  position: relative;
+  z-index: 2;
+}
+.oryne-panel-body {
+  touch-action: pan-y !important;
+}
+
+/* ---------- Oryne v2.4: colourful editor panel (brand gradient, tasteful) ---------- */
+/* Oryne's own orange -> purple brand gradient (same as the logo). White text
+   sits only on deepened gradient stops (#c85000 = 4.56:1, #6d1fd8 = 7.40:1
+   vs white, measured) so it stays readable; soft tints always carry dark
+   text (14.5:1 or better, measured). The v2.3 block above is untouched —
+   pointer-events / touch-action hardening still wins where they overlap. */
+.oryne-fab {
+  background: linear-gradient(135deg, #f25c00, #7b2fff);
+  box-shadow: 0 10px 28px rgba(123, 47, 255, .45);
+}
+.oryne-panel-head {
+  background: linear-gradient(120deg, #c85000, #6d1fd8);
+  border-bottom: 1px solid rgba(255, 255, 255, .25);
+}
+.oryne-panel-head h2 { color: #fff; }
+.oryne-panel-head p { color: rgba(255, 255, 255, .88); }
+.oryne-panel-head .oryne-btn {
+  background: rgba(0, 0, 0, .22); color: #fff;
+  border: 1px solid rgba(255, 255, 255, .35);
+}
+.oryne-panel-body {
+  background: linear-gradient(180deg, #fff8f1 0%, #f8f2ff 100%);
+}
+.oryne-panel-foot {
+  background: #faf5ff; border-top: 1px solid #e9ddff;
+}
+.oryne-btn-primary {
+  background: linear-gradient(135deg, #c85000, #6d1fd8);
+  border-color: transparent; color: #fff;
+  box-shadow: 0 4px 14px rgba(123, 47, 255, .35);
+}
+.oryne-btn-primary:hover { filter: brightness(1.07); }
+.oryne-cat { color: #5b21b6; }
+.oryne-cat-btn {
+  background: #fff; border-color: #e6ddff; color: #1a1a2e;
+}
+.oryne-cat-btn:hover { filter: brightness(.98); }
+/* One soft tint per category, cycling through all 8 (decorative only — the
+   tint follows the visible order, so it may shift while searching). */
+.oryne-cat-wrap:nth-of-type(8n+1) .oryne-cat-btn { background: #fff1e6; border-color: #ffd9b3; }
+.oryne-cat-wrap:nth-of-type(8n+2) .oryne-cat-btn { background: #f3eaff; border-color: #ddc8ff; }
+.oryne-cat-wrap:nth-of-type(8n+3) .oryne-cat-btn { background: #e7f8ef; border-color: #b8e6cc; }
+.oryne-cat-wrap:nth-of-type(8n+4) .oryne-cat-btn { background: #e8f3ff; border-color: #bcd9ff; }
+.oryne-cat-wrap:nth-of-type(8n+5) .oryne-cat-btn { background: #ffeef3; border-color: #ffc9d9; }
+.oryne-cat-wrap:nth-of-type(8n+6) .oryne-cat-btn { background: #fffbe0; border-color: #f2e6a0; }
+.oryne-cat-wrap:nth-of-type(8n+7) .oryne-cat-btn { background: #e6f8f8; border-color: #b3e8e8; }
+.oryne-cat-wrap:nth-of-type(8n+8) .oryne-cat-btn { background: #f2e9ff; border-color: #d8c2ff; }
+.oryne-cat-count {
+  background: linear-gradient(135deg, #c85000, #6d1fd8); color: #fff;
+}
+.oryne-cat-tools .oryne-btn {
+  border-color: #e0d4ff; color: #5b21b6; background: #fff;
+}
+.oryne-cat-tools .oryne-btn:hover { background: #f6f0ff; }
+.oryne-effect:hover { border-color: #c9a8ff; }
+.oryne-effect.active { border-color: #7b2fff; background: #f6f0ff; }
+/* v2.4 deselect: active effect ka Apply button gradient ho jata hai ("✓ Applied")
+   taake toggle state saaf dikhe; deepened stops taake safed text ka contrast strong rahe. */
+.oryne-effect.active .oryne-btn {
+  background: linear-gradient(135deg, #c85000, #6d1fd8);
+  border-color: transparent; color: #fff;
+}
+.oryne-deselect-btn {
+  width: 100%; margin: 2px 0 10px; background: #fff;
+  color: #b3261e; border-color: #f0c4c4;
+}
+.oryne-deselect-btn:hover { background: #fdf0f0; }
+.oryne-scope button.active {
+  background: linear-gradient(135deg, #c85000, #6d1fd8);
+  border-color: transparent; color: #fff;
+}
+.oryne-selected-info { background: #f3eaff; border-color: #d9c2ff; }
+.oryne-search:focus {
+  border-color: #7b2fff; outline: none;
+  box-shadow: 0 0 0 3px rgba(123, 47, 255, .15);
+}
