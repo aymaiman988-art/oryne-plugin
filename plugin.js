@@ -26,6 +26,16 @@
    jata hai), "Clear selection" button effect + block dono clear karta hai,
    aur dobara usi block par tap karne se block deselect hota hai. Saved
    effects untouched rehte hain — sirf current preview/selection clear hoti hai.
+   v2.6: BUTTON fix — Gradient Button (aur baaki button effects) block WRAPPER
+   div ([data-block-id]) par lagne ke bajaye andar wale asli button par lagte
+   hain (resolveButtonTarget, resolveTextTarget jaisa). Squarespace 7.1 mein
+   button block aksar wrapper div hota hai jiske andar a.sqs-block-button-
+   element / .sqs-button-element / button hota hai; class wrapper par lagti
+   thi to gradient poore block background par phail jata tha, button par nahi.
+   CSS safety net bhi hai: purani saved config wrapper ko target kare to bhi
+   gradient andar wale button par dikhe, wrapper khud gradient na bhare.
+   "All of this type" scope toggle aur uska default waise ke waise hain —
+   kuch hataya nahi gaya.
    Usage: paste the loader snippet in Squarespace Code Injection (Header).
    Config lives in window.__ORYNE_CONFIG__ or localStorage (demo).
 */
@@ -548,7 +558,7 @@
     try {
       if (!el) return 'any';
       if (el.closest('header') || el.tagName === 'HEADER') return 'header';
-      if (el.matches('a.sqs-block-button, .sqs-block-button, button, .sqs-button-element')) return 'button';
+      if (el.matches('a.sqs-block-button, a.sqs-block-button-element, .sqs-block-button, button, .sqs-button-element, a.sqs-button')) return 'button'; /* v2.6: real Squarespace button element is a.sqs-block-button-element — it must count as a button, or allSelectorFor/scopeLabelFor miss it after resolveButtonTarget */
       if (el.tagName === 'IMG' || el.classList.contains('sqs-block-image')) return 'image';
       if (/^H[1234]$/.test(el.tagName) || el.tagName === 'P') return 'text';
       if (el.tagName === 'SECTION' || el.dataset.sectionId) return 'section';
@@ -574,7 +584,7 @@
   }
   function allSelectorFor(el) {
     var t = detectType(el);
-    if (t === 'button') return '.sqs-block-button, a.sqs-button, .sqs-button-element, button';
+    if (t === 'button') return '.sqs-block-button, a.sqs-block-button-element, a.sqs-button, .sqs-button-element, button'; /* v2.6: include the real Squarespace button element class, or All-scope misses real buttons */
     if (t === 'text') {
       if (el.tagName && /^H[1234]$/.test(el.tagName)) return el.tagName.toLowerCase();
       if (el.tagName === 'P') {
@@ -613,6 +623,26 @@
       var inner = el.querySelector('h1, h2, h3, h4') || el.querySelector('p');
       return inner || el;
     } catch (err) { return el; } /* v2.5: resolution must never throw */
+  }
+  /* v2.6: button-effect target resolution (oryne-button-target). Mirrors
+     resolveTextTarget: in Squarespace 7.1 a button block is usually a
+     WRAPPER div ([data-block-id]) containing the real button element
+     (a.sqs-block-button-element / .sqs-button-element / button). A button-
+     effect class on the wrapper filled the whole block background with the
+     gradient instead of colouring the button itself. So when the chosen
+     effect targets 'button' and the selected element is not itself the
+     button but CONTAINS one, resolve to the inner button element (first
+     match). Non-button effects are untouched. NOTE: '.sqs-block-button' is
+     only a button when it IS the <a>/<button> itself (as in the demo); a
+     plain div with that class is the wrapper, so it must NOT count. */
+  function resolveButtonTarget(el, fx) {
+    try {
+      if (!el || !fx || (fx.targets || []).indexOf('button') === -1) return el;
+      if (el.matches && el.matches('button, a.sqs-block-button, a.sqs-button, a.sqs-block-button-element, .sqs-button-element')) return el;
+      if (!el.querySelector) return el;
+      var inner = el.querySelector('a.sqs-block-button-element, .sqs-button-element, a.sqs-block-button, a.sqs-button, button');
+      return inner || el;
+    } catch (err) { return el; } /* v2.6: resolution must never throw */
   }
   /* v2.4: "All of this type" is the default — human-readable scope label, so
      the user can see exactly what an effect will hit before saving. */
@@ -654,7 +684,7 @@
 
   /* ---------- Public API ---------- */
   window.Oryne = {
-    version: '2.5.0', EFFECTS: EFFECTS,
+    version: '2.6.0', EFFECTS: EFFECTS,
     refresh: function () { applyConfig(loadConfig()); },
     getConfig: loadConfig,
     applyConfig: applyConfig
@@ -999,7 +1029,7 @@
       var info = panel.querySelector('[data-role="selected"]'); if (!info) return;
       if (!editorState.selectedEl) { info.textContent = 'Select a block: click any text, image, button or section on the page while this panel is open.'; return; }
       var fx = editorState.selectedEffect ? EFFECTS[editorState.selectedEffect] : null;
-      var showEl = resolveTextTarget(editorState.selectedEl, fx); /* v2.5: text effect chose ho to Selected line mein asli heading dikhe */
+      var showEl = resolveButtonTarget(resolveTextTarget(editorState.selectedEl, fx), fx); /* v2.5/v2.6: text ya button effect chose ho to Selected line mein asli element dikhe */
       info.textContent = 'Selected: ' + labelFor(showEl) + '  ·  ' + scopeLabelFor(showEl);
     }
     function selectElement(el) {
@@ -1063,7 +1093,7 @@
     function currentItem() {
       if (!editorState.selectedEl || !editorState.selectedEffect) return null;
       var fx = EFFECTS[editorState.selectedEffect];
-      var el = resolveTextTarget(editorState.selectedEl, fx); /* v2.5: text effect on a block wrapper previews + saves on the inner heading, not the wrapper */
+      var el = resolveButtonTarget(resolveTextTarget(editorState.selectedEl, fx), fx); /* v2.5/v2.6: text/button effect on a block wrapper previews + saves on the inner element, not the wrapper */
       return { target: editorState.scope === 'all' ? allSelectorFor(el) : selectorFor(el), effect: editorState.selectedEffect, options: clone(editorState.options), scope: editorState.scope };
     }
     function previewCurrent() {
@@ -1080,7 +1110,7 @@
     function clearPreview() {
       var el = editorState.selectedEl, fx = EFFECTS[editorState.selectedEffect];
       if (!el || !fx) return;
-      el = resolveTextTarget(el, fx); /* v2.5: clear exactly the element the preview hit */
+      el = resolveButtonTarget(resolveTextTarget(el, fx), fx); /* v2.5/v2.6: clear exactly the element the preview hit */
       var saved = [];
       try { saved = loadConfig().items.filter(function (x) { return x.effect === editorState.selectedEffect; }); } catch (e) {}
       var targets = [];

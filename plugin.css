@@ -49,9 +49,28 @@
 @keyframes oryne-blink { 50% { opacity: 0; } }
 
 /* ---------- Button effects ---------- */
+/* v2.6: Gradient Button safety net (oryne-button-target). If the class ever
+   lands on a button-block WRAPPER (e.g. an old saved config whose target is
+   the wrapper's [data-block-id]), the gradient must still show ON the inner
+   button, not fill the wrapper. The --oryne-color1/2 vars are set inline on
+   the wrapper by applyOptions and inherit down, so the descendant rule picks
+   them up. The :has() rule clears the wrapper's own gradient background
+   whenever it contains a real button element — the wrapper itself never
+   fills with gradient. */
 .oryne-fx-btn-gradient {
   background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
   color: #fff !important; border: none !important;
+}
+.oryne-fx-btn-gradient a.sqs-block-button-element,
+.oryne-fx-btn-gradient .sqs-button-element,
+.oryne-fx-btn-gradient a.sqs-block-button,
+.oryne-fx-btn-gradient a.sqs-button,
+.oryne-fx-btn-gradient button {
+  background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
+  color: #fff !important; border: none !important;
+}
+.oryne-fx-btn-gradient:has(a.sqs-block-button-element, .sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important;
 }
 .oryne-fx-btn-pill { border-radius: 999px !important; }
 .oryne-fx-btn-outline { background: transparent !important; border: 2px solid var(--oryne-color1, #111) !important; color: var(--oryne-color1, #111) !important; }
