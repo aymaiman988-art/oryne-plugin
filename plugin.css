@@ -49,27 +49,53 @@
 @keyframes oryne-blink { 50% { opacity: 0; } }
 
 /* ---------- Button effects ---------- */
-/* v2.6: Gradient Button safety net (oryne-button-target). If the class ever
-   lands on a button-block WRAPPER (e.g. an old saved config whose target is
-   the wrapper's [data-block-id]), the gradient must still show ON the inner
-   button, not fill the wrapper. The --oryne-color1/2 vars are set inline on
-   the wrapper by applyOptions and inherit down, so the descendant rule picks
-   them up. The :has() rule clears the wrapper's own gradient background
-   whenever it contains a real button element — the wrapper itself never
-   fills with gradient. */
+/* v2.7: Gradient Button must FILL the whole button pill (oryne-btn-fill).
+   ROOT CAUSE FOUND (v2.6 test): the gradient showed ONLY on the "BOOK NOW"
+   text, the white pill fill stayed white. The button rule never set
+   background-clip, so a text-gradient class tried earlier on the same element
+   (.oryne-fx-gradient-heading / .oryne-fx-text-gradient-anim — both set
+   background-clip:text !important + -webkit-text-fill-color:transparent
+   !important, and the animated one sits LATER in this file) clipped the
+   button gradient to the glyphs. The theme's white fill lives on an inner
+   layer / ::before of the button, which the old rule never touched. Fix: the
+   button rule now forces border-box clip + solid readable text fill, resets
+   background-size/animation, and clears inner white layers — but never the
+   outer block wrapper. The button's own border-radius is NOT touched, so the
+   gradient follows the pill shape. */
 .oryne-fx-btn-gradient {
   background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
-  color: #fff !important; border: none !important;
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  background-size: auto !important; animation: none !important;
+  color: #fff !important; -webkit-text-fill-color: #fff !important; border: none !important;
 }
+/* v2.7 guard: even if a text-gradient class is ALSO on this button (tried
+   earlier, or saved in the same config and loaded after the button item),
+   it must never clip the button gradient to the text. Two classes beat one
+   class wherever the text rule sits in this file. */
+.oryne-fx-btn-gradient.oryne-fx-gradient-heading,
+.oryne-fx-btn-gradient.oryne-fx-text-gradient-anim,
+.oryne-fx-btn-gradient.oryne-fx-text-outline {
+  background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  background-size: auto !important; animation: none !important;
+  color: #fff !important; -webkit-text-fill-color: #fff !important;
+}
+/* v2.7: theme white fill can live on a child span / ::before of the button —
+   make those transparent so the gradient shows through the whole pill. */
+.oryne-fx-btn-gradient > * { background: transparent !important; }
+.oryne-fx-btn-gradient::before { background: transparent !important; }
 .oryne-fx-btn-gradient a.sqs-block-button-element,
-.oryne-fx-btn-gradient .sqs-button-element,
+.oryne-fx-btn-gradient a.sqs-button-element,
+.oryne-fx-btn-gradient button.sqs-button-element,
 .oryne-fx-btn-gradient a.sqs-block-button,
 .oryne-fx-btn-gradient a.sqs-button,
 .oryne-fx-btn-gradient button {
   background: linear-gradient(90deg, var(--oryne-color1, #ff6a00), var(--oryne-color2, #7b2fff)) !important;
-  color: #fff !important; border: none !important;
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  background-size: auto !important; animation: none !important;
+  color: #fff !important; -webkit-text-fill-color: #fff !important; border: none !important;
 }
-.oryne-fx-btn-gradient:has(a.sqs-block-button-element, .sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+.oryne-fx-btn-gradient:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
   background: transparent !important;
 }
 .oryne-fx-btn-pill { border-radius: 999px !important; }
@@ -81,6 +107,232 @@
 .oryne-fx-btn-shine::after { content: ""; position: absolute; top: 0; left: -80%; width: 50%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent); transform: skewX(-20deg); transition: left .6s ease; }
 .oryne-fx-btn-shine:hover::after { left: 130%; }
 .oryne-fx-btn-underline { border-bottom: 3px solid var(--oryne-color1, #ff6a00) !important; border-radius: 0 !important; }
+
+/* ---------- v2.8: Neon Button + Hover Glow (and the other button effects)
+   must hit ONLY the real button pill, never the block wrapper ----------
+   ROOT CAUSE (same family as v2.6/v2.7, but with an Edit-mode twist): new
+   applies go through resolveButtonTarget(), so the class lands on the inner
+   button — BUT old saved configs still target the wrapper ([data-block-id]
+   from before v2.6), and the All-scope selector (the DEFAULT) contained bare
+   '.sqs-block-button' — which on a real Squarespace site matches the outer
+   block wrapper div itself (it carries class sqs-block-button), while in the
+   demo it matches only the <a> button. That is why Preview looked right and
+   Edit mode gradiented/glowed the WHOLE BLOCK: the class landed on the
+   wrapper too. .oryne-fx-btn-neon on a wrapper blackened the whole block
+   with a neon border + glow around a big rectangle; .oryne-fx-btn-glow on a
+   wrapper glowed the whole block on hover. Fix, two layers (see plugin.js
+   v2.8 note for the JS layer): (1) descendant rules below paint each effect
+   on the inner button only, and :has() rules neutralise the wrapper
+   (transparent background, no border, no shadow); (2) the JS All-scope
+   selector no longer contains bare '.sqs-block-button' / '.sqs-button-element',
+   so NEW saves never target a wrapper. When the class is correctly on the
+   button itself, no descendant matches and the base rules are untouched, so
+   each effect looks exactly as before. The button's own border-radius is NOT
+   touched — neon/glow follow the pill shape. hover-glow-block is a BLOCK
+   effect by design and is NOT changed. Inner-button selectors below are
+   tag-qualified on purpose (a./button.) for the same reason: a bare
+   '.sqs-block-button' would match the wrapper div. */
+.oryne-fx-btn-neon.oryne-fx-gradient-heading,
+.oryne-fx-btn-neon.oryne-fx-text-gradient-anim,
+.oryne-fx-btn-neon.oryne-fx-text-outline {
+  background: #111 !important; color: var(--oryne-color1,#00e5ff) !important; -webkit-text-fill-color: var(--oryne-color1,#00e5ff) !important;
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  box-shadow: 0 0 18px var(--oryne-color1,#00e5ff) !important; border: 2px solid var(--oryne-color1,#00e5ff) !important;
+}
+.oryne-fx-btn-neon > * { background: transparent !important; }
+.oryne-fx-btn-neon::before { background: transparent !important; }
+.oryne-fx-btn-neon a.sqs-block-button-element,
+.oryne-fx-btn-neon a.sqs-button-element,
+.oryne-fx-btn-neon button.sqs-button-element,
+.oryne-fx-btn-neon a.sqs-block-button,
+.oryne-fx-btn-neon a.sqs-button,
+.oryne-fx-btn-neon button {
+  background: #111 !important; color: var(--oryne-color1,#00e5ff) !important; -webkit-text-fill-color: var(--oryne-color1,#00e5ff) !important;
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  box-shadow: 0 0 18px var(--oryne-color1,#00e5ff) !important; border: 2px solid var(--oryne-color1,#00e5ff) !important;
+}
+.oryne-fx-btn-neon:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important; border-color: transparent !important; box-shadow: none !important; color: inherit !important; -webkit-text-fill-color: inherit !important;
+}
+/* v2.8 Hover Glow: on hover ONLY the pill glows. The two descendant selectors
+   cover both ways a wrapper-targeted glow can be hovered (hover on the wrapper,
+   hover directly on the inner button). The :has() rule kills the wrapper's own
+   glow — a big rectangle around the whole block must never glow. The
+   --oryne-glow var is set inline on the classed element and inherits down,
+   so old saves keep their glow colour. */
+.oryne-fx-btn-glow.oryne-fx-gradient-heading,
+.oryne-fx-btn-glow.oryne-fx-text-gradient-anim,
+.oryne-fx-btn-glow.oryne-fx-text-outline {
+  background-clip: border-box !important; -webkit-background-clip: border-box !important;
+  color: inherit !important; -webkit-text-fill-color: inherit !important;
+}
+.oryne-fx-btn-glow:hover a.sqs-block-button-element,
+.oryne-fx-btn-glow:hover a.sqs-button-element,
+.oryne-fx-btn-glow:hover button.sqs-button-element,
+.oryne-fx-btn-glow:hover a.sqs-block-button,
+.oryne-fx-btn-glow:hover a.sqs-button,
+.oryne-fx-btn-glow:hover button,
+.oryne-fx-btn-glow a.sqs-block-button-element:hover,
+.oryne-fx-btn-glow a.sqs-button-element:hover,
+.oryne-fx-btn-glow button.sqs-button-element:hover,
+.oryne-fx-btn-glow a.sqs-block-button:hover,
+.oryne-fx-btn-glow a.sqs-button:hover,
+.oryne-fx-btn-glow button:hover {
+  box-shadow: 0 0 0 4px var(--oryne-glow, rgba(123,47,255,.25)), 0 0 24px var(--oryne-glow, rgba(123,47,255,.45)) !important;
+}
+.oryne-fx-btn-glow:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button):hover {
+  box-shadow: none !important;
+}
+/* v2.8: same wrapper safety net for the other button effects. Descendant rules
+   paint the effect on the inner button; :has() rules neutralise the wrapper.
+   Base rules (correctly-targeted button) are untouched. */
+.oryne-fx-btn-pill a.sqs-block-button-element,
+.oryne-fx-btn-pill a.sqs-button-element,
+.oryne-fx-btn-pill button.sqs-button-element,
+.oryne-fx-btn-pill a.sqs-block-button,
+.oryne-fx-btn-pill a.sqs-button,
+.oryne-fx-btn-pill button { border-radius: 999px !important; }
+.oryne-fx-btn-rounded a.sqs-block-button-element,
+.oryne-fx-btn-rounded a.sqs-button-element,
+.oryne-fx-btn-rounded button.sqs-button-element,
+.oryne-fx-btn-rounded a.sqs-block-button,
+.oryne-fx-btn-rounded a.sqs-button,
+.oryne-fx-btn-rounded button { border-radius: 14px !important; }
+.oryne-fx-btn-square a.sqs-block-button-element,
+.oryne-fx-btn-square a.sqs-button-element,
+.oryne-fx-btn-square button.sqs-button-element,
+.oryne-fx-btn-square a.sqs-block-button,
+.oryne-fx-btn-square a.sqs-button,
+.oryne-fx-btn-square button { border-radius: 0 !important; }
+.oryne-fx-btn-outline a.sqs-block-button-element,
+.oryne-fx-btn-outline a.sqs-button-element,
+.oryne-fx-btn-outline button.sqs-button-element,
+.oryne-fx-btn-outline a.sqs-block-button,
+.oryne-fx-btn-outline a.sqs-button,
+.oryne-fx-btn-outline button { background: transparent !important; border: 2px solid var(--oryne-color1, #111) !important; color: var(--oryne-color1, #111) !important; }
+.oryne-fx-btn-outline:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important; border: none !important; box-shadow: none !important;
+}
+.oryne-fx-btn-dark a.sqs-block-button-element,
+.oryne-fx-btn-dark a.sqs-button-element,
+.oryne-fx-btn-dark button.sqs-button-element,
+.oryne-fx-btn-dark a.sqs-block-button,
+.oryne-fx-btn-dark a.sqs-button,
+.oryne-fx-btn-dark button { background: #111 !important; color: #fff !important; -webkit-text-fill-color: #fff !important; background-clip: border-box !important; -webkit-background-clip: border-box !important; border-color: #111 !important; }
+.oryne-fx-btn-dark:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important; border-color: transparent !important;
+}
+.oryne-fx-btn-glass a.sqs-block-button-element,
+.oryne-fx-btn-glass a.sqs-button-element,
+.oryne-fx-btn-glass button.sqs-button-element,
+.oryne-fx-btn-glass a.sqs-block-button,
+.oryne-fx-btn-glass a.sqs-button,
+.oryne-fx-btn-glass button { background: rgba(255,255,255,.25) !important; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.6) !important; color: #111 !important; }
+.oryne-fx-btn-glass:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important; backdrop-filter: none !important; border-color: transparent !important; box-shadow: none !important;
+}
+.oryne-fx-btn-ghost a.sqs-block-button-element,
+.oryne-fx-btn-ghost a.sqs-button-element,
+.oryne-fx-btn-ghost button.sqs-button-element,
+.oryne-fx-btn-ghost a.sqs-block-button,
+.oryne-fx-btn-ghost a.sqs-button,
+.oryne-fx-btn-ghost button { background: transparent !important; color: inherit !important; border: 1px dashed #999 !important; }
+.oryne-fx-btn-ghost:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  background: transparent !important; border: none !important;
+}
+.oryne-fx-btn-underline a.sqs-block-button-element,
+.oryne-fx-btn-underline a.sqs-button-element,
+.oryne-fx-btn-underline button.sqs-button-element,
+.oryne-fx-btn-underline a.sqs-block-button,
+.oryne-fx-btn-underline a.sqs-button,
+.oryne-fx-btn-underline button { border-bottom: 3px solid var(--oryne-color1, #ff6a00) !important; border-radius: 0 !important; }
+.oryne-fx-btn-underline:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  border-bottom: none !important;
+}
+.oryne-fx-btn-3d a.sqs-block-button-element,
+.oryne-fx-btn-3d a.sqs-button-element,
+.oryne-fx-btn-3d button.sqs-button-element,
+.oryne-fx-btn-3d a.sqs-block-button,
+.oryne-fx-btn-3d a.sqs-button,
+.oryne-fx-btn-3d button { box-shadow: 0 5px 0 var(--oryne-color1,#ff6a00), 0 8px 16px rgba(0,0,0,.2); transform: translateY(0); }
+.oryne-fx-btn-3d a.sqs-block-button-element:active,
+.oryne-fx-btn-3d a.sqs-button-element:active,
+.oryne-fx-btn-3d button.sqs-button-element:active,
+.oryne-fx-btn-3d a.sqs-block-button:active,
+.oryne-fx-btn-3d a.sqs-button:active,
+.oryne-fx-btn-3d button:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--oryne-color1,#ff6a00); }
+.oryne-fx-btn-3d:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button) {
+  box-shadow: none !important; transform: none !important;
+}
+.oryne-fx-btn-lift a.sqs-block-button-element,
+.oryne-fx-btn-lift a.sqs-button-element,
+.oryne-fx-btn-lift button.sqs-button-element,
+.oryne-fx-btn-lift a.sqs-block-button,
+.oryne-fx-btn-lift a.sqs-button,
+.oryne-fx-btn-lift button { transition: transform .25s ease, box-shadow .25s ease; }
+.oryne-fx-btn-lift:hover a.sqs-block-button-element,
+.oryne-fx-btn-lift:hover a.sqs-button-element,
+.oryne-fx-btn-lift:hover button.sqs-button-element,
+.oryne-fx-btn-lift:hover a.sqs-block-button,
+.oryne-fx-btn-lift:hover a.sqs-button,
+.oryne-fx-btn-lift:hover button,
+.oryne-fx-btn-lift a.sqs-block-button-element:hover,
+.oryne-fx-btn-lift a.sqs-button-element:hover,
+.oryne-fx-btn-lift button.sqs-button-element:hover,
+.oryne-fx-btn-lift a.sqs-block-button:hover,
+.oryne-fx-btn-lift a.sqs-button:hover,
+.oryne-fx-btn-lift button:hover { transform: translateY(-4px); box-shadow: 0 12px 24px rgba(0,0,0,.18); }
+.oryne-fx-btn-lift:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button):hover {
+  transform: none !important; box-shadow: none !important;
+}
+.oryne-fx-btn-shine a.sqs-block-button-element,
+.oryne-fx-btn-shine a.sqs-button-element,
+.oryne-fx-btn-shine button.sqs-button-element,
+.oryne-fx-btn-shine a.sqs-block-button,
+.oryne-fx-btn-shine a.sqs-button,
+.oryne-fx-btn-shine button { position: relative; overflow: hidden; }
+.oryne-fx-btn-shine a.sqs-block-button-element::after,
+.oryne-fx-btn-shine a.sqs-button-element::after,
+.oryne-fx-btn-shine button.sqs-button-element::after,
+.oryne-fx-btn-shine a.sqs-block-button::after,
+.oryne-fx-btn-shine a.sqs-button::after,
+.oryne-fx-btn-shine button::after { content: ""; position: absolute; top: 0; left: -80%; width: 50%; height: 100%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.6), transparent); transform: skewX(-20deg); transition: left .6s ease; }
+.oryne-fx-btn-shine a.sqs-block-button-element:hover::after,
+.oryne-fx-btn-shine a.sqs-button-element:hover::after,
+.oryne-fx-btn-shine button.sqs-button-element:hover::after,
+.oryne-fx-btn-shine a.sqs-block-button:hover::after,
+.oryne-fx-btn-shine a.sqs-button:hover::after,
+.oryne-fx-btn-shine button:hover::after,
+.oryne-fx-btn-shine:hover a.sqs-block-button-element::after,
+.oryne-fx-btn-shine:hover a.sqs-button-element::after,
+.oryne-fx-btn-shine:hover button.sqs-button-element::after,
+.oryne-fx-btn-shine:hover a.sqs-block-button::after,
+.oryne-fx-btn-shine:hover a.sqs-button::after,
+.oryne-fx-btn-shine:hover button::after { left: 130%; }
+.oryne-fx-btn-shine:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button)::after {
+  content: none !important;
+}
+.oryne-fx-btn-arrow a.sqs-block-button-element::after,
+.oryne-fx-btn-arrow a.sqs-button-element::after,
+.oryne-fx-btn-arrow button.sqs-button-element::after,
+.oryne-fx-btn-arrow a.sqs-block-button::after,
+.oryne-fx-btn-arrow a.sqs-button::after,
+.oryne-fx-btn-arrow button::after { content: " →"; transition: margin .2s; }
+.oryne-fx-btn-arrow a.sqs-block-button-element:hover::after,
+.oryne-fx-btn-arrow a.sqs-button-element:hover::after,
+.oryne-fx-btn-arrow button.sqs-button-element:hover::after,
+.oryne-fx-btn-arrow a.sqs-block-button:hover::after,
+.oryne-fx-btn-arrow a.sqs-button:hover::after,
+.oryne-fx-btn-arrow button:hover::after,
+.oryne-fx-btn-arrow:hover a.sqs-block-button-element::after,
+.oryne-fx-btn-arrow:hover a.sqs-button-element::after,
+.oryne-fx-btn-arrow:hover button.sqs-button-element::after,
+.oryne-fx-btn-arrow:hover a.sqs-block-button::after,
+.oryne-fx-btn-arrow:hover a.sqs-button::after,
+.oryne-fx-btn-arrow:hover button::after { margin-left: 6px; }
+.oryne-fx-btn-arrow:has(a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button)::after {
+  content: none !important;
+}
 
 /* ---------- Block / image effects ---------- */
 .oryne-fx-img-zoom { overflow: hidden; }
@@ -243,7 +495,7 @@
 .oryne-fx-btn-3d { box-shadow: 0 5px 0 var(--oryne-color1,#ff6a00), 0 8px 16px rgba(0,0,0,.2); transform: translateY(0); }
 .oryne-fx-btn-3d:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--oryne-color1,#ff6a00); }
 .oryne-fx-btn-glass { background: rgba(255,255,255,.25) !important; backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,.6) !important; color: #111 !important; }
-.oryne-fx-btn-neon { background: #111 !important; color: var(--oryne-color1,#00e5ff) !important; box-shadow: 0 0 18px var(--oryne-color1,#00e5ff); border: 2px solid var(--oryne-color1,#00e5ff) !important; }
+.oryne-fx-btn-neon { background: #111 !important; color: var(--oryne-color1,#00e5ff) !important; -webkit-text-fill-color: var(--oryne-color1,#00e5ff) !important; background-clip: border-box !important; -webkit-background-clip: border-box !important; box-shadow: 0 0 18px var(--oryne-color1,#00e5ff) !important; border: 2px solid var(--oryne-color1,#00e5ff) !important; }
 .oryne-fx-btn-arrow::after { content: " →"; transition: margin .2s; }
 .oryne-fx-btn-arrow:hover::after { margin-left: 6px; }
 .oryne-fx-btn-rounded { border-radius: 14px !important; }

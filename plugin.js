@@ -36,6 +36,36 @@
    gradient andar wale button par dikhe, wrapper khud gradient na bhare.
    "All of this type" scope toggle aur uska default waise ke waise hain —
    kuch hataya nahi gaya.
+   v2.7: BUTTON FILL fix — Gradient Button ab poore button pill ko bharte
+   hue gradient deta hai, sirf "BOOK NOW" text par nahi. ROOT CAUSE: button
+   rule ne background-clip set nahi kiya tha, to usi element par pehle try
+   kiya hua text-gradient class (gradient-heading / text-gradient-anim —
+   dono background-clip:text + -webkit-text-fill-color:transparent dete
+   hain) button gradient ko text tak clip kar deta tha, aur theme ka white
+   fill (button ke andar wali layer / ::before) chhupa rehta tha. Fix:
+   btn-gradient rule ab border-box clip + solid white text fill force karta
+   hai, background-size/animation reset karta hai, andar ki white layers
+   transparent karta hai, aur applyEffect btn-gradient lagate waqt purane
+   text-gradient classes hata deta hai. Button ka apna border-radius nahi
+   chheda — gradient pill ki shape follow karta hai.
+   v2.8: NEON + HOVER GLOW fix — Neon Button aur Hover Glow (aur baaki button
+   effects) ab sirf asli button pill par lagte hain, poore block par nahi.
+   ROOT CAUSE (Edit mode vs Preview): Preview/demo mein <a class=
+   "sqs-block-button"> khud button hai, to sab theek dikhta tha; asli
+   Squarespace site par outer block wrapper div khud class sqs-block-button
+   rakhta hai, aur All-scope selector (default) mein bare '.sqs-block-button'
+   tha — to class wrapper par bhi lagti thi aur neon poora block kaala kar
+   deta tha, glow poore block ko glow karta tha. SELECTABLE mein
+   a.sqs-block-button-element bhi nahi tha, to Edit mode mein click seedha
+   wrapper par girta tha. Fix, do layers: (1) JS — All-scope selector aur
+   detectType/resolveButtonTarget mein bare '.sqs-block-button' /
+   '.sqs-button-element' ki jagah tag-qualified selectors (a./button.), to
+   NAYE saves kabhi wrapper ko target nahi karte; (2) CSS safety net (v2.6/
+   v2.7 wala pattern) neon, glow aur baaki button effects par bhi — descendant
+   rules andar wale button par effect paint karte hain, :has() rules wrapper
+   ko neutralise karte hain (transparent, no border, no shadow). Purani saved
+   configs bhi isi se theek ho jati hain. hover-glow-block BLOCK effect hai,
+   usko nahi chheda. Button ka apna border-radius nahi chheda.
    Usage: paste the loader snippet in Squarespace Code Injection (Header).
    Config lives in window.__ORYNE_CONFIG__ or localStorage (demo).
 */
@@ -528,6 +558,17 @@
   var TEXT_FX = { 'typewriter': true, 'word-loop': true, 'number-counter': true };
   function applyEffect(el, item) {
     var fx = EFFECTS[item.effect]; if (!fx || !el) return;
+    /* v2.7/v2.8: button effects must never be clipped/hidden by a text-
+       gradient class tried earlier on the same element. Gradient Heading /
+       Animated Gradient Text set background-clip:text + transparent text
+       fill — that clips a solid button background (neon / dark) to the
+       glyphs and hides the text under a glow. Strip those classes when a
+       button effect with its own background/text fill is applied. (The CSS
+       guard rules also cover saved configs where the text item loads AFTER
+       the button item.) */
+    if (item.effect === 'btn-gradient' || item.effect === 'btn-neon' || item.effect === 'btn-glow') {
+      try { el.classList.remove('oryne-fx-gradient-heading', 'oryne-fx-text-gradient-anim', 'oryne-fx-text-outline'); } catch (e) {}
+    }
     el.classList.add(fx.cssClass);
     applyOptions(el, item.options || {});
     if (SCROLL_FX.indexOf(item.effect) !== -1) {
@@ -553,12 +594,12 @@
   }
 
   /* ---------- Target helpers (Squarespace 7.1 DOM) ---------- */
-  var SELECTABLE = 'section[data-section-id], [data-block-id], .sqs-block, header, .header, h1, h2, h3, h4, p, img, a.sqs-block-button, .sqs-block-button, button';
+  var SELECTABLE = 'section[data-section-id], [data-block-id], .sqs-block, header, .header, h1, h2, h3, h4, p, img, a.sqs-block-button, a.sqs-block-button-element, .sqs-block-button, button'; /* v2.8: real Squarespace button element a.sqs-block-button-element was missing — Edit-mode clicks skipped it and landed on the wrapper */
   function detectType(el) {
     try {
       if (!el) return 'any';
       if (el.closest('header') || el.tagName === 'HEADER') return 'header';
-      if (el.matches('a.sqs-block-button, a.sqs-block-button-element, .sqs-block-button, button, .sqs-button-element, a.sqs-button')) return 'button'; /* v2.6: real Squarespace button element is a.sqs-block-button-element — it must count as a button, or allSelectorFor/scopeLabelFor miss it after resolveButtonTarget */
+      if (el.matches('a.sqs-block-button, a.sqs-block-button-element, a.sqs-button, a.sqs-button-element, button.sqs-button-element, button')) return 'button'; /* v2.8: tag-qualified only — bare '.sqs-block-button' / '.sqs-button-element' match the outer block wrapper div on a real Squarespace site, so a wrapper counted as a button and All-scope hit it too */
       if (el.tagName === 'IMG' || el.classList.contains('sqs-block-image')) return 'image';
       if (/^H[1234]$/.test(el.tagName) || el.tagName === 'P') return 'text';
       if (el.tagName === 'SECTION' || el.dataset.sectionId) return 'section';
@@ -584,7 +625,7 @@
   }
   function allSelectorFor(el) {
     var t = detectType(el);
-    if (t === 'button') return '.sqs-block-button, a.sqs-block-button-element, a.sqs-button, .sqs-button-element, button'; /* v2.6: include the real Squarespace button element class, or All-scope misses real buttons */
+    if (t === 'button') return 'a.sqs-block-button, a.sqs-block-button-element, a.sqs-button, a.sqs-button-element, button.sqs-button-element, button'; /* v2.8: tag-qualified only — bare '.sqs-block-button' matches the outer block wrapper div on a real site (it carries that class), so All-scope used to paint the whole block; the demo <a class="sqs-block-button"> still matches a.sqs-block-button */
     if (t === 'text') {
       if (el.tagName && /^H[1234]$/.test(el.tagName)) return el.tagName.toLowerCase();
       if (el.tagName === 'P') {
@@ -638,9 +679,9 @@
   function resolveButtonTarget(el, fx) {
     try {
       if (!el || !fx || (fx.targets || []).indexOf('button') === -1) return el;
-      if (el.matches && el.matches('button, a.sqs-block-button, a.sqs-button, a.sqs-block-button-element, .sqs-button-element')) return el;
+      if (el.matches && el.matches('button, a.sqs-block-button, a.sqs-button, a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element')) return el; /* v2.8: tag-qualified, same reason as detectType */
       if (!el.querySelector) return el;
-      var inner = el.querySelector('a.sqs-block-button-element, .sqs-button-element, a.sqs-block-button, a.sqs-button, button');
+      var inner = el.querySelector('a.sqs-block-button-element, a.sqs-button-element, button.sqs-button-element, a.sqs-block-button, a.sqs-button, button');
       return inner || el;
     } catch (err) { return el; } /* v2.6: resolution must never throw */
   }
@@ -684,7 +725,7 @@
 
   /* ---------- Public API ---------- */
   window.Oryne = {
-    version: '2.6.0', EFFECTS: EFFECTS,
+    version: '2.8.0', EFFECTS: EFFECTS,
     refresh: function () { applyConfig(loadConfig()); },
     getConfig: loadConfig,
     applyConfig: applyConfig
